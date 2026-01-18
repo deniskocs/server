@@ -20,7 +20,7 @@ DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_I
 
 # Сборка образа
 echo -e "${YELLOW}🔨 Building Docker image...${NC}"
-docker build -t "$IMAGE_NAME" "$SCRIPT_DIR"
+docker build --platform linux/amd64 -t "$IMAGE_NAME" "$SCRIPT_DIR"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Failed to build Docker image${NC}"

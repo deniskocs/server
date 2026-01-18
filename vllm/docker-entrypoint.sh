@@ -2,7 +2,7 @@
 set -e
 
 # Активация виртуального окружения
-source /app/venv/bin/activate
+. /app/venv/bin/activate
 
 # Значения по умолчанию
 # Имя модели берется из переменной окружения MODEL_NAME, если не задано - используется значение по умолчанию
@@ -41,7 +41,7 @@ exec python3 -m vllm.entrypoints.openai.api_server \
   --quantization awq_marlin \
   --max-model-len 8192 \
   --dtype float16 \
-  --gpu-memory-utilization 0.25 \
+  --gpu-memory-utilization 0.5 \
   --enable-auto-tool-choice \
   --tool-call-parser llama3_json \
   --api-key "$API_KEY" \
