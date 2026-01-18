@@ -10,7 +10,7 @@ source "$SERVER_ROOT/config.sh"
 # Конфигурация образа
 IMAGE_NAME="deniskocs/learn-english:vllm-1.0.0"
 
-echo -e "${GREEN}🚀 Starting build of vLLM image${NC}"
+echo -e "${GREEN}🚀 Starting deployment of vLLM image${NC}"
 
 # Получение токена из Bitwarden
 DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_ITEM_NAME") || exit 1
@@ -30,8 +30,22 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${GREEN}✅ Image built successfully${NC}"
-echo -e "${GREEN}   Image: $IMAGE_NAME${NC}"
+
+# Публикация образа
+echo -e "${YELLOW}📤 Pushing image to Docker Hub...${NC}"
+docker push "$IMAGE_NAME"
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Failed to push image to Docker Hub${NC}"
+    docker logout
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Image pushed successfully${NC}"
 
 # Логаут из Docker Hub
 echo -e "${YELLOW}🚪 Logging out from Docker Hub...${NC}"
 docker logout
+
+echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
+echo -e "${GREEN}   Image: $IMAGE_NAME${NC}"
