@@ -13,8 +13,8 @@ RUN . venv/bin/activate && \
     rm -rf ~/.cache/pip
 
 # Копирование entrypoint скрипта
-COPY docker-entrypoint.sh .
-RUN chmod +x docker-entrypoint.sh
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Создание директории для storage
 RUN mkdir -p /app/storage
@@ -27,4 +27,4 @@ ENV HOST=0.0.0.0
 EXPOSE 8000
 
 # Запуск через entrypoint скрипт
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
