@@ -1,0 +1,12 @@
+# Конфигурация для vLLM AWQ модели
+model:
+  default_name: "ai-automation-finetuned-awq"
+  served_name: "ai-automation-finetuned-awq"
+
+vllm:
+  quantization: "awq_marlin"
+  max_model_len: 8192
+  dtype: "float16"
+  gpu_memory_utilization: 0.5
+  enable_auto_tool_choice: true
+  tool_call_parser: "llama3_json"

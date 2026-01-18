@@ -4,10 +4,46 @@ set -e
 # Активация виртуального окружения
 . /app/venv/bin/activate
 
-# Значения по умолчанию
-# Имя модели берется из переменной окружения MODEL_NAME, если не задано - используется значение по умолчанию
-MODEL_NAME="${MODEL_NAME:-ai-automation-finetuned-awq}"
+# Определение конфига (по умолчанию vllm)
+CONFIG_NAME="${CONFIG_NAME:-vllm}"
+CONFIG_FILE="/llm-configs/${CONFIG_NAME}.env"
+
+# Загрузка конфигурации
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "❌ Error: Config file not found at $CONFIG_FILE"
+    exit 1
+fi
+
+# Загружаем переменные из конфига
+source "$CONFIG_FILE"
+
+# Имя модели берется из переменной окружения MODEL_NAME, если не задано - используется значение из конфига
+MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
 MODEL_PATH="/models/${MODEL_NAME}"
+
+# SERVED_MODEL_NAME берется из переменной окружения или из конфига
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$DEFAULT_MODEL_NAME}"
+
+# Собираем аргументы vLLM из переменных конфига
+VLLM_ARGS=""
+if [ -n "$VLLM_QUANTIZATION" ]; then
+    VLLM_ARGS="$VLLM_ARGS --quantization $VLLM_QUANTIZATION"
+fi
+if [ -n "$VLLM_MAX_MODEL_LEN" ]; then
+    VLLM_ARGS="$VLLM_ARGS --max-model-len $VLLM_MAX_MODEL_LEN"
+fi
+if [ -n "$VLLM_DTYPE" ]; then
+    VLLM_ARGS="$VLLM_ARGS --dtype $VLLM_DTYPE"
+fi
+if [ -n "$VLLM_GPU_MEMORY_UTILIZATION" ]; then
+    VLLM_ARGS="$VLLM_ARGS --gpu-memory-utilization $VLLM_GPU_MEMORY_UTILIZATION"
+fi
+if [ "$VLLM_ENABLE_AUTO_TOOL_CHOICE" = "true" ]; then
+    VLLM_ARGS="$VLLM_ARGS --enable-auto-tool-choice"
+fi
+if [ -n "$VLLM_TOOL_CALL_PARSER" ]; then
+    VLLM_ARGS="$VLLM_ARGS --tool-call-parser $VLLM_TOOL_CALL_PARSER"
+fi
 
 # Проверка наличия модели в смонтированной директории /models
 # Модели монтируются из ~/models на хосте и должны быть уже скачаны
@@ -29,21 +65,17 @@ fi
 echo "✅ Model found at $MODEL_PATH"
 
 echo "Starting vLLM API server..."
+echo "Config: $CONFIG_NAME"
 echo "Model: $MODEL_PATH"
 echo "Served model name: $SERVED_MODEL_NAME"
 echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 echo "Port: $PORT"
 echo "Host: $HOST"
 
-# Запуск vLLM API сервера
+# Запуск vLLM API сервера с параметрами из конфига
 exec python3 -m vllm.entrypoints.openai.api_server \
   --model "$MODEL_PATH" \
-  --quantization awq_marlin \
-  --max-model-len 8192 \
-  --dtype float16 \
-  --gpu-memory-utilization 0.5 \
-  --enable-auto-tool-choice \
-  --tool-call-parser llama3_json \
+  $VLLM_ARGS \
   --api-key "$API_KEY" \
   --served-model-name "$SERVED_MODEL_NAME" \
   --host "$HOST" \

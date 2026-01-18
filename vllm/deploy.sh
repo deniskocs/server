@@ -20,8 +20,8 @@ DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_I
 
 # Сборка образа
 echo -e "${YELLOW}🔨 Building Docker image...${NC}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-docker build --platform linux/amd64 -t "$IMAGE_NAME" "$SCRIPT_DIR"
+# Используем build context из корня server для доступа к llm-configs
+docker build --platform linux/amd64 -f "$SCRIPT_DIR/Dockerfile" -t "$IMAGE_NAME" "$SERVER_ROOT"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Failed to build Docker image${NC}"

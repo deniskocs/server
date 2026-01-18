@@ -10,8 +10,11 @@ RUN . /app/venv/bin/activate && \
     pip cache purge && \
     rm -rf ~/.cache/pip
 
+# Копирование конфигов
+COPY vllm/llm-configs/ /llm-configs/
+
 # Копирование entrypoint скрипта
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY vllm/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Технические переменные окружения для контейнера
