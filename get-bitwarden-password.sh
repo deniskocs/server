@@ -29,9 +29,16 @@ ITEM_NAME="$1"
 cleanup
 
 # Логин в Bitwarden
+# Используем /dev/tty для интерактивного ввода, даже когда скрипт запущен из другого скрипта
 TEMP_OUTPUT=$(mktemp)
-bw login 2>&1 | tee "$TEMP_OUTPUT"
-[ ${PIPESTATUS[0]} -eq 0 ] || { echo "Login failed" >&2; rm -f "$TEMP_OUTPUT"; exit 1; }
+# Перенаправляем stdin на /dev/tty, stdout в файл, stderr на терминал для видимости промптов
+bw login < /dev/tty > "$TEMP_OUTPUT" 2>/dev/tty
+LOGIN_EXIT=$?
+if [ $LOGIN_EXIT -ne 0 ]; then
+    echo "Login failed" >&2
+    rm -f "$TEMP_OUTPUT"
+    exit 1
+fi
 BW_SESSION=$(grep -oE 'BW_SESSION="[^"]+"' "$TEMP_OUTPUT" | sed 's/BW_SESSION="\(.*\)"/\1/' | head -n1)
 rm -f "$TEMP_OUTPUT"
 [ -n "$BW_SESSION" ] && [[ ${#BW_SESSION} -ge 20 ]] || { echo "Failed to get session" >&2; exit 1; }
