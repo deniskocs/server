@@ -37,11 +37,11 @@ echo "Host: $HOST"
 
 # Запуск vLLM API сервера
 # FP8 модель уже квантованная, поэтому quantization не нужен
+# dtype не указываем, vLLM автоматически определит тип данных из модели
 exec python3 -m vllm.entrypoints.openai.api_server \
   --model "$MODEL_PATH" \
   --max-model-len 8192 \
-  --dtype float8_e5m2 \
-  --gpu-memory-utilization 0.5 \
+  --gpu-memory-utilization 0.95 \
   --enable-auto-tool-choice \
   --tool-call-parser llama3_json \
   --api-key "$API_KEY" \
