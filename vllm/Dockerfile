@@ -25,4 +25,4 @@ ENV HOST=0.0.0.0
 EXPOSE 8000
 
 # Запуск через entrypoint скрипт
-ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/docker-entrypoint.sh"]

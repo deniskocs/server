@@ -15,7 +15,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # Загружаем переменные из конфига
-source "$CONFIG_FILE"
+. "$CONFIG_FILE"
 
 # Имя модели берется из переменной окружения MODEL_NAME, если не задано - используется значение из конфига
 MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
