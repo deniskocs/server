@@ -14,6 +14,10 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
+# Сохраняем значение SERVED_MODEL_NAME из переменной окружения (если задано)
+# чтобы не потерять его при загрузке конфига
+ENV_SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-}"
+
 # Загружаем переменные из конфига
 . "$CONFIG_FILE"
 
@@ -21,8 +25,14 @@ fi
 MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
 MODEL_PATH="/models/${MODEL_NAME}"
 
-# SERVED_MODEL_NAME берется из переменной окружения или из конфига
-SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$DEFAULT_MODEL_NAME}"
+# SERVED_MODEL_NAME: приоритет у переменной окружения, затем значение из конфига, затем DEFAULT_MODEL_NAME
+# Если переменная окружения была задана, используем её, иначе используем значение из конфига или DEFAULT_MODEL_NAME
+if [ -n "$ENV_SERVED_MODEL_NAME" ]; then
+    SERVED_MODEL_NAME="$ENV_SERVED_MODEL_NAME"
+else
+    # Используем значение из конфига (если есть) или DEFAULT_MODEL_NAME
+    SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$DEFAULT_MODEL_NAME}"
+fi
 
 # Собираем аргументы vLLM из переменных конфига
 VLLM_ARGS=""
