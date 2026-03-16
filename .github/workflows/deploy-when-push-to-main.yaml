@@ -36,7 +36,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY_DEPLOY_TO_MAC_SERVER_BASE64 }}" | base64 -d > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+        ssh-keyscan ${{ secrets.MAC_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         chmod 644 ~/.ssh/known_hosts
 
     - name: Deploy Router on EC2
