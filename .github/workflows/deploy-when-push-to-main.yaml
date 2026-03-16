@@ -26,7 +26,7 @@ jobs:
         context: .
         push: true
         platforms: linux/arm64
-        tags: deniskocs/learn-english:web-1.0.1
+        tags: deniskocs/router:0.0.1
 
     - name: Logout from Docker Hub
       run: docker logout
@@ -39,11 +39,11 @@ jobs:
         ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         chmod 644 ~/.ssh/known_hosts
 
-    - name: Deploy web on EC2
+    - name: Deploy Router on EC2
       run: |
         ssh -o "StrictHostKeyChecking=no" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
         docker network create learn_english || true
-        docker rm web -f
-        docker rmi deniskocs/learn-english:web-1.0.1
-        docker run -d -ti --name web -p 80:80 -p 443:443 -v /Users/home_mac_server/letsencrypt:/etc/letsencrypt --network learn_english --restart unless-stopped deniskocs/learn-english:web-1.0.1
+        docker rm router -f
+        docker rmi deniskocs/router:0.0.1
+        docker run -d -ti --name router -p 80:80 -p 443:443 -v /Users/home_mac_server/letsencrypt:/etc/letsencrypt --network learn_english --restart unless-stopped deniskocs/router:0.0.1
         EOF
