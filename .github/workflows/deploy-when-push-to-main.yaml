@@ -41,7 +41,7 @@ jobs:
 
     - name: Deploy Router on EC2
       run: |
-        ssh -o "StrictHostKeyChecking=no" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
+        ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
         docker network create learn_english || true
         docker rm router -f
         docker rmi deniskocs/router:0.0.1
