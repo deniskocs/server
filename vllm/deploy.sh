@@ -5,7 +5,7 @@ set -e
 # Загрузка общей конфигурации
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$SERVER_ROOT/config.sh"
+source "$SERVER_ROOT/scripts/config.sh"
 
 # Конфигурация образа
 IMAGE_NAME="deniskocs/learn-english:vllm-1.0.0"
@@ -19,10 +19,10 @@ if [ -f "$SCRIPT_DIR/Dockerfile" ]; then
 fi
 
 # Получение токена из Bitwarden
-DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_ITEM_NAME") || exit 1
+DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/scripts/get-bitwarden-password.sh" "$BITWARDEN_ITEM_NAME") || exit 1
 
 # Логин в Docker Hub
-"$SERVER_ROOT/login-docker.sh" "$DOCKER_HUB_USERNAME" "$DOCKER_HUB_ACCESS_TOKEN" || exit 1
+"$SERVER_ROOT/scripts/login-docker.sh" "$DOCKER_HUB_USERNAME" "$DOCKER_HUB_ACCESS_TOKEN" || exit 1
 
 # Сборка образа
 # VLLM_DOCKER_NO_CACHE=1 — без кэша слоёв (если Hub всё ещё со старым vLLM после правок Dockerfile)

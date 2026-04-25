@@ -5,7 +5,7 @@ set -e
 # Загрузка общей конфигурации
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$SERVER_ROOT/config.sh"
+source "$SERVER_ROOT/scripts/config.sh"
 
 # Настройки SSH
 KEY_NAME="server.rsa"
@@ -41,7 +41,7 @@ fi
 
 # Получение токена HuggingFace из Bitwarden (если нужен)
 HF_TOKEN_ITEM_NAME="HUGGINGFACE_TOKEN"
-HF_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$HF_TOKEN_ITEM_NAME" 2>/dev/null || echo "")
+HF_TOKEN=$("$SERVER_ROOT/scripts/get-bitwarden-password.sh" "$HF_TOKEN_ITEM_NAME" 2>/dev/null || echo "")
 
 # Копирование Python скрипта на сервер
 echo -e "${YELLOW}📤 Copying download script to server...${NC}"

@@ -20,7 +20,7 @@ cd base
 ./deploy.sh
 ```
 
-Скрипт читает общую конфигурацию (`../config.sh`), токен Docker Hub берёт через `../get-bitwarden-password.sh` и `../login-docker.sh`. Тег образа: `deniskocs/core:server-base-0.1.0`.
+Скрипт читает общую конфигурацию (`../scripts/config.sh`), токен Docker Hub берёт через `../scripts/get-bitwarden-password.sh` и `../scripts/login-docker.sh`. Тег образа: `deniskocs/core:server-base-0.1.0`.
 
 ### Только локальная сборка (без публикации)
 
