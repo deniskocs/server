@@ -27,9 +27,10 @@ def download_model(model_name: str, target_dir: str) -> None:
     # Create target directory if it doesn't exist
     model_path.mkdir(parents=True, exist_ok=True)
     
-    # Get HuggingFace token from environment (if needed for private models)
-    hf_token = os.environ.get("HF_TOKEN", None)
-    
+    # Token only if non-empty; empty string becomes "Bearer " and breaks HTTP clients
+    raw = os.environ.get("HF_TOKEN")
+    hf_token = (raw.strip() if raw else None) or None
+
     try:
         # Download the model
         print(f"⏳ Starting download...")

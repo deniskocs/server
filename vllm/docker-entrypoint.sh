@@ -48,6 +48,12 @@ fi
 if [ -n "$VLLM_GPU_MEMORY_UTILIZATION" ]; then
     VLLM_ARGS="$VLLM_ARGS --gpu-memory-utilization $VLLM_GPU_MEMORY_UTILIZATION"
 fi
+if [ -n "$VLLM_TENSOR_PARALLEL_SIZE" ]; then
+    VLLM_ARGS="$VLLM_ARGS --tensor-parallel-size $VLLM_TENSOR_PARALLEL_SIZE"
+fi
+if [ -n "$VLLM_REASONING_PARSER" ]; then
+    VLLM_ARGS="$VLLM_ARGS --reasoning-parser $VLLM_REASONING_PARSER"
+fi
 if [ "$VLLM_ENABLE_AUTO_TOOL_CHOICE" = "true" ]; then
     VLLM_ARGS="$VLLM_ARGS --enable-auto-tool-choice"
 fi
