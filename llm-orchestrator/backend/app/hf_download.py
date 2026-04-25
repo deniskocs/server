@@ -33,9 +33,10 @@ class _LogPercentTqdm(tqdm):
         self._min_pct = min_pct_step
         self._last_pct: float = -1.0
         self._log_each_step = log_each_step
+        # tqdm's __init__ calls refresh() before returning; _emit_progress needs this.
+        self._last_indeterminate: float = 0.0
         kw.setdefault("mininterval", 0.2)
         super().__init__(*a, **kw)  # type: ignore[misc]
-        self._last_indeterminate: float = 0.0
 
     def update(self, n: int = 1) -> bool | None:  # type: ignore[override]
         r = super().update(n)

@@ -44,3 +44,37 @@ export interface ConfigRowViewModel {
   /** While `state === "downloading"`: 0–100, or null (size not known yet / indeterminate). */
   downloadProgress?: number | null;
 }
+
+export interface HostStatsGpu {
+  index: number;
+  name: string;
+  memoryTotalMib: number;
+  memoryUsedMib: number;
+  memoryFreeMib: number;
+  utilizationPercent: number | null;
+}
+
+export interface HostStatsModelsFilesystem {
+  totalBytes: number;
+  usedBytes: number;
+  freeBytes: number;
+}
+
+export interface HostStatsModels {
+  path: string;
+  dirSizeBytes: number;
+  filesystem: HostStatsModelsFilesystem;
+}
+
+export interface HostStats {
+  cpuPercent: number;
+  memory: {
+    totalBytes: number;
+    usedBytes: number;
+    availableBytes: number;
+  };
+  gpus: HostStatsGpu[];
+  models: HostStatsModels | null;
+  modelsDirConfigured: boolean;
+  modelsError?: string;
+}

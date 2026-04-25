@@ -1,4 +1,4 @@
-import type { ConfigRowViewModel } from "./types";
+import type { ConfigRowViewModel, HostStats } from "./types";
 import { apiUrl } from "./apiBase";
 
 class ApiError extends Error {
@@ -18,6 +18,13 @@ async function readJson<T>(r: Response): Promise<T> {
 }
 
 type ModelsDto = { rows: ConfigRowViewModel[]; count: number };
+
+export async function fetchHostStats(): Promise<HostStats> {
+  const r = await fetch(apiUrl("/api/orchestrator/host-stats"), {
+    headers: { Accept: "application/json" },
+  });
+  return readJson<HostStats>(r);
+}
 
 export async function fetchModels(): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/models"), {

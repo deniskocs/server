@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from . import config_files
+from .host_stats import collect_host_stats
 from .orchestrator import state
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,12 @@ def health() -> dict[str, str]:
     if c:
         out["configsDir"] = c
     return out
+
+
+@app.get("/api/orchestrator/host-stats")
+def get_host_stats() -> dict[str, Any]:
+    """CPU, RAM, GPUs (nvidia-smi if present), MODELS_DIR size and filesystem free space."""
+    return collect_host_stats()
 
 
 @app.get("/api/orchestrator/models", response_model=ModelsResponse)

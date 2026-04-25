@@ -1,6 +1,7 @@
 import "./style.css";
-import type { ConfigRowViewModel, ModelRuntimeState } from "./data/types";
+import type { ConfigRowViewModel, HostStats, ModelRuntimeState } from "./data/types";
 import {
+  fetchHostStats,
   fetchModels,
   getConfigFileText,
   createConfig,
@@ -23,6 +24,85 @@ function el<K extends keyof HTMLElementTagNameMap>(
   if (props?.text) n.textContent = props.text;
   if (props?.html) n.innerHTML = props.html;
   return n;
+}
+
+function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n < 0) return "—";
+  const units = ["B", "KB", "MB", "GB", "TB"] as const;
+  let v = n;
+  let u = 0;
+  while (v >= 1024 && u < units.length - 1) {
+    v /= 1024;
+    u += 1;
+  }
+  const d = u === 0 || v >= 10 ? v.toFixed(0) : v.toFixed(1);
+  return `${d} ${units[u]}`;
+}
+
+function hostStatsRow(label: string, value: string): HTMLElement {
+  const row = el("div", { className: "host-stats__row" });
+  row.append(
+    el("span", { className: "host-stats__label", text: label }),
+    el("span", { className: "host-stats__value", text: value })
+  );
+  return row;
+}
+
+function renderHostStats(s: HostStats): HTMLElement {
+  const root = el("div", { className: "host-stats__inner" });
+  const grid = el("div", { className: "host-stats__grid" });
+  grid.append(
+    hostStatsRow("CPU", `${s.cpuPercent.toFixed(1)}%`),
+    hostStatsRow(
+      "RAM",
+      `${formatBytes(s.memory.usedBytes)} / ${formatBytes(
+        s.memory.totalBytes
+      )} used — ${formatBytes(s.memory.availableBytes)} free`
+    )
+  );
+  if (s.gpus.length) {
+    for (const g of s.gpus) {
+      const util =
+        g.utilizationPercent != null
+          ? ` · GPU load ${g.utilizationPercent}%`
+          : "";
+      const title = s.gpus.length > 1 ? `GPU ${g.index}` : "GPU";
+      grid.append(
+        hostStatsRow(
+          title,
+          `${g.name} — ${g.memoryUsedMib} / ${g.memoryTotalMib} MiB used (${g.memoryFreeMib} MiB free)${util}`
+        )
+      );
+    }
+  } else {
+    grid.append(
+      hostStatsRow("GPU", "not detected (no nvidia-smi in API container/host)")
+    );
+  }
+  if (s.models) {
+    const m = s.models;
+    const fs = m.filesystem;
+    grid.append(
+      hostStatsRow("MODELS_DIR", m.path),
+      hostStatsRow("Weights folder", formatBytes(m.dirSizeBytes)),
+      hostStatsRow(
+        "Disk (volume with MODELS_DIR)",
+        `${formatBytes(fs.usedBytes)} / ${formatBytes(
+          fs.totalBytes
+        )} used — ${formatBytes(fs.freeBytes)} free on volume`
+      )
+    );
+  } else {
+    if (s.modelsError) {
+      grid.append(hostStatsRow("Models / disk", s.modelsError));
+    } else if (!s.modelsDirConfigured) {
+      grid.append(
+        hostStatsRow("Models / disk", "MODELS_DIR is not set in the API process")
+      );
+    }
+  }
+  root.append(grid);
+  return root;
 }
 
 function apiErrorToMessage(e: unknown): string {
@@ -431,6 +511,18 @@ function mount(root: HTMLElement): void {
   const header = el("header", { className: "head" });
   const sub = el("p", { className: "sub", text: "Loading…" });
   const main = el("main", { className: "main" });
+  const hostPanel = el("div", { className: "host-stats" });
+  hostPanel.append(
+    el("div", {
+      className: "host-stats__title",
+      text: "Server resources",
+    })
+  );
+  const hostBody = el("div", { className: "host-stats__body" });
+  hostBody.textContent = "Loading…";
+  hostPanel.append(hostBody);
+  const tableMount = el("div", { className: "table-wrap" });
+  main.append(hostPanel, tableMount);
   const addBtn = el("button", {
     className: "btn primary",
     text: "+ Add new config",
@@ -448,12 +540,12 @@ function mount(root: HTMLElement): void {
       const { rows, count } = await fetchModels();
       addBtn.disabled = false;
       sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: server API`;
-      main.replaceChildren(renderTable(rows, refresh));
+      tableMount.replaceChildren(renderTable(rows, refresh));
     } catch (e) {
       addBtn.disabled = true;
       const msg = e instanceof ApiError ? `API error ${e.status}` : "Cannot reach API";
       sub.textContent = `${msg} — start backend: cd backend && uvicorn app.main:app --port 8765`;
-      main.replaceChildren(
+      tableMount.replaceChildren(
         el("p", {
           className: "api-err",
           text: "Vite dev proxies /api → :8765. Or set VITE_API_BASE_URL to your API base.",
@@ -468,7 +560,38 @@ function mount(root: HTMLElement): void {
   );
   shell.append(header, main, foot);
   root.append(shell);
-  void refresh();
+  void (async () => {
+    const [hst, mdl] = await Promise.allSettled([
+      fetchHostStats(),
+      fetchModels(),
+    ]);
+    if (hst.status === "fulfilled") {
+      hostBody.replaceChildren(renderHostStats(hst.value));
+    } else {
+      hostBody.classList.add("host-stats__body--err");
+      hostBody.textContent =
+        hst.reason instanceof ApiError
+          ? `Host stats failed (HTTP ${hst.reason.status})`
+          : "Host stats unavailable";
+    }
+    if (mdl.status === "fulfilled") {
+      const { rows, count } = mdl.value;
+      addBtn.disabled = false;
+      sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: server API`;
+      tableMount.replaceChildren(renderTable(rows, refresh));
+    } else {
+      addBtn.disabled = true;
+      const e = mdl.reason;
+      const msg = e instanceof ApiError ? `API error ${e.status}` : "Cannot reach API";
+      sub.textContent = `${msg} — start backend: cd backend && uvicorn app.main:app --port 8765`;
+      tableMount.replaceChildren(
+        el("p", {
+          className: "api-err",
+          text: "Vite dev proxies /api → :8765. Or set VITE_API_BASE_URL to your API base.",
+        })
+      );
+    }
+  })();
 }
 
 const app = document.getElementById("app");
