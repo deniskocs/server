@@ -1,11 +1,11 @@
 # vLLM Image для серверов
 
-Docker образ с предустановленным vLLM 0.12.0 для запуска LLM моделей. Поддерживает различные модели через конфигурационные YAML файлы.
+Docker образ с предустановленным **vLLM 0.19.1** для запуска LLM моделей. Конфиги — `.env` в `vllm/llm-configs/`.
 
 ## Содержимое образа
 
-- **Base image**: `deniskocs/core:server-base-0.1.0` (с PyTorch 2.9.0 и CUDA 12.9)
-- **vLLM**: 0.12.0
+- **Base image**: `deniskocs/core:server-base-0.1.0` (Ubuntu + CUDA runtime + venv)
+- **vLLM**: **0.19.1** (ставит **PyTorch 2.10** и **Transformers 5.x** с индекса `cu129`; нужно для **Qwen3.6** и актуальных чекпойнтов)
 - **torch-c-dlpack-ext**: для поддержки DLPack
 - **PyYAML**: для чтения конфигурационных файлов
 - **Python**: 3.10 (из базового образа)

@@ -1,0 +1,65 @@
+name: Deploy vLLM service to local server
+
+on:
+  workflow_dispatch:
+    inputs:
+      config_name:
+        description: 'Config name (without .env extension)'
+        required: true
+        type: string
+        default: 'vllm'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setting up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY_BASE64_LOCAL_SERVER }}" | base64 -d > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p 2222 -H home.chilik.net >> ~/.ssh/known_hosts 2>/dev/null || true
+        chmod 644 ~/.ssh/known_hosts
+
+    - name: Deploy vLLM
+      run: |
+        ssh -i ~/.ssh/id_rsa -p 2222 -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=~/.ssh/known_hosts" denis@home.chilik.net bash << DEPLOY_SCRIPT
+        set -e
+
+        CONTAINER_NAME="vllm-server"
+        IMAGE_NAME="deniskocs/learn-english:vllm-1.0.0"
+        CONFIG_NAME="${{ github.event.inputs.config_name }}"
+
+        echo "Stopping and removing existing vLLM container..."
+        docker rm "\$CONTAINER_NAME" -f || true
+
+        echo "Pulling latest vLLM image from Docker Hub..."
+        docker pull "\$IMAGE_NAME"
+
+        mkdir -p ~/models
+
+        DOCKER_ARGS=(-d -ti --name "\$CONTAINER_NAME" --restart unless-stopped)
+        DOCKER_ARGS+=(--gpus "device=0")
+        DOCKER_ARGS+=(-p 8000:8000)
+        DOCKER_ARGS+=(-v "\$(realpath ~/models):/models")
+        DOCKER_ARGS+=(-e "API_KEY=localkey")
+        DOCKER_ARGS+=(-e "CONFIG_NAME=\$CONFIG_NAME")
+        DOCKER_ARGS+=(-e "PORT=8000")
+        DOCKER_ARGS+=(-e "HOST=0.0.0.0")
+        DOCKER_ARGS+=("\$IMAGE_NAME")
+
+        echo "Starting vLLM container with config: \$CONFIG_NAME..."
+        docker run "\${DOCKER_ARGS[@]}"
+
+        echo "✅ vLLM container started successfully"
+        echo "Config: \$CONFIG_NAME"
+        echo "Port: 8000"
+        echo "Models are mounted from ~/models directory"
+        DEPLOY_SCRIPT

@@ -12,6 +12,12 @@ IMAGE_NAME="deniskocs/learn-english:vllm-1.0.0"
 
 echo -e "${GREEN}🚀 Starting deployment of vLLM image${NC}"
 
+# Что реально пойдёт в образ (защита от «запушил старый кэш / не тот файл»)
+if [ -f "$SCRIPT_DIR/Dockerfile" ]; then
+    echo -e "${YELLOW}📋 vLLM pin from Dockerfile:${NC}"
+    grep -E '^\s*pip install.*vllm' "$SCRIPT_DIR/Dockerfile" || true
+fi
+
 # Получение токена из Bitwarden
 DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_ITEM_NAME") || exit 1
 
@@ -19,15 +25,16 @@ DOCKER_HUB_ACCESS_TOKEN=$("$SERVER_ROOT/get-bitwarden-password.sh" "$BITWARDEN_I
 "$SERVER_ROOT/login-docker.sh" "$DOCKER_HUB_USERNAME" "$DOCKER_HUB_ACCESS_TOKEN" || exit 1
 
 # Сборка образа
-echo -e "${YELLOW}🔨 Building Docker image...${NC}"
-# Используем build context из корня server для доступа к llm-configs
-docker build --platform linux/amd64 -f "$SCRIPT_DIR/Dockerfile" -t "$IMAGE_NAME" "$SERVER_ROOT"
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Failed to build Docker image${NC}"
-    docker logout
-    exit 1
+# VLLM_DOCKER_NO_CACHE=1 — без кэша слоёв (если Hub всё ещё со старым vLLM после правок Dockerfile)
+BUILD_ARGS=(--platform linux/amd64 -f "$SCRIPT_DIR/Dockerfile" -t "$IMAGE_NAME")
+if [ "${VLLM_DOCKER_NO_CACHE:-}" = "1" ]; then
+    echo -e "${YELLOW}🔨 Building (no cache — VLLM_DOCKER_NO_CACHE=1)...${NC}"
+    BUILD_ARGS+=(--no-cache)
+else
+    echo -e "${YELLOW}🔨 Building Docker image...${NC}"
 fi
+# Используем build context из корня server для доступа к vllm/llm-configs
+docker build "${BUILD_ARGS[@]}" "$SERVER_ROOT"
 
 echo -e "${GREEN}✅ Image built successfully${NC}"
 

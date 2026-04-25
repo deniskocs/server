@@ -1,11 +1,12 @@
 # Используем базовый образ с предустановленным PyTorch 2.9.0 (CUDA 12.9)
 FROM deniskocs/core:server-base-0.1.0
 
-# PyTorch уже установлен в базовом образе в venv
-# Устанавливаем vLLM 0.12.0 и torch-c-dlpack-ext
+# Базовый образ поднимает venv; torch 2.9 из base будет заменён при установке vLLM.
+# vLLM 0.19.x: PyTorch 2.10 + Transformers 5.x (нужно для Qwen3.6 / qwen3_5_moe и др.).
+# Индекс cu129 — рекомендация vLLM для CUDA 12.9 wheels.
 RUN . /app/venv/bin/activate && \
     pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir "vllm==0.12.0" && \
+    pip install --no-cache-dir "vllm==0.19.1" --extra-index-url https://download.pytorch.org/whl/cu129 && \
     pip install --no-cache-dir torch-c-dlpack-ext && \
     pip cache purge && \
     rm -rf ~/.cache/pip
