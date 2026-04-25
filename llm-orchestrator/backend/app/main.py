@@ -1,7 +1,8 @@
-"""LLM Orchestrator API: configs on disk, vLLM via Docker on the host, table + actions."""
+"""LLM Orchestrator API: configs on disk, vLLM via Docker, models list + actions."""
 
 from __future__ import annotations
 
+import logging
 import os
 from enum import Enum
 from typing import Any
@@ -10,8 +11,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from . import config_files
 from .simulation import state
 
+logger = logging.getLogger(__name__)
 app = FastAPI(title="LLM Orchestrator", version="0.1.0")
 
 app.add_middleware(
@@ -23,7 +26,7 @@ app.add_middleware(
 )
 
 
-class TableResponse(BaseModel):
+class ModelsResponse(BaseModel):
     rows: list[dict[str, Any]]
     count: int
 
@@ -41,8 +44,11 @@ class ActionType(str, Enum):
     delete_config = "delete_config"
 
 
-class ActionBody(BaseModel):
+class ModelsActionBody(BaseModel):
     action: ActionType
+    configFile: str
+
+    model_config = {"extra": "forbid"}
 
 
 class AddConfigBody(BaseModel):
@@ -52,6 +58,24 @@ class AddConfigBody(BaseModel):
 
 class UpdateConfigBody(BaseModel):
     text: str
+
+
+def _normalize_config_file(raw: str) -> str:
+    s = (raw or "").strip()
+    if not s:
+        raise HTTPException(400, detail="configFile is required")
+    base = s.replace("\\", "/").rstrip("/").split("/")[-1]
+    if not base.endswith(".env"):
+        base = f"{base}.env"
+    try:
+        return config_files.validate_env_filename(base)
+    except ValueError as e:
+        raise HTTPException(400, detail=str(e)) from e
+
+
+def _config_must_exist(name: str) -> None:
+    if name not in set(config_files.list_env_filenames()):
+        raise HTTPException(404, detail="Unknown config")
 
 
 @app.on_event("startup")
@@ -77,14 +101,14 @@ def health() -> dict[str, str]:
     return out
 
 
-@app.get("/api/orchestrator/table", response_model=TableResponse)
-def get_table() -> TableResponse:
+@app.get("/api/orchestrator/models", response_model=ModelsResponse)
+def get_models() -> ModelsResponse:
     rows, count = state.build_table()
-    return TableResponse(rows=rows, count=count)
+    return ModelsResponse(rows=rows, count=count)
 
 
-@app.post("/api/orchestrator/configs", response_model=TableResponse)
-def post_add_config(body: AddConfigBody) -> TableResponse:
+@app.post("/api/orchestrator/configs", response_model=ModelsResponse)
+def post_add_config(body: AddConfigBody) -> ModelsResponse:
     try:
         state.add_config(body.fileName, body.text)
     except ValueError as e:
@@ -95,7 +119,7 @@ def post_add_config(body: AddConfigBody) -> TableResponse:
             detail="A config with this file name already exists",
         ) from e
     rows, count = state.build_table()
-    return TableResponse(rows=rows, count=count)
+    return ModelsResponse(rows=rows, count=count)
 
 
 @app.get("/api/orchestrator/configs/{config_id}/file-text", response_model=FileTextResponse)
@@ -107,8 +131,8 @@ def get_file_text(config_id: str) -> FileTextResponse:
     return FileTextResponse(fileName=name, text=text)
 
 
-@app.put("/api/orchestrator/configs/{config_id}/file-text", response_model=TableResponse)
-def put_file_text(config_id: str, body: UpdateConfigBody) -> TableResponse:
+@app.put("/api/orchestrator/configs/{config_id}/file-text", response_model=ModelsResponse)
+def put_file_text(config_id: str, body: UpdateConfigBody) -> ModelsResponse:
     try:
         state.update_config_text(config_id, body.text)
     except FileNotFoundError as e:
@@ -116,11 +140,13 @@ def put_file_text(config_id: str, body: UpdateConfigBody) -> TableResponse:
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     rows, count = state.build_table()
-    return TableResponse(rows=rows, count=count)
+    return ModelsResponse(rows=rows, count=count)
 
 
-@app.post("/api/orchestrator/configs/{config_id}/actions", response_model=TableResponse)
-async def post_action(config_id: str, body: ActionBody) -> TableResponse:
+@app.post("/api/orchestrator/models/actions", response_model=ModelsResponse)
+async def post_models_action(body: ModelsActionBody) -> ModelsResponse:
+    config_id = _normalize_config_file(body.configFile)
+    _config_must_exist(config_id)
     a = body.action
     if a == ActionType.download:
         try:
@@ -131,8 +157,18 @@ async def post_action(config_id: str, body: ActionBody) -> TableResponse:
         try:
             await state.action_start(config_id)
         except ValueError as e:
+            logger.warning(
+                "POST models/actions start: 400 configFile=%s reason=%s",
+                config_id,
+                e,
+            )
             raise HTTPException(status_code=400, detail=str(e)) from e
         except FileNotFoundError as e:
+            logger.warning(
+                "POST models/actions start: 400 configFile=%s reason=%s",
+                config_id,
+                e,
+            )
             raise HTTPException(status_code=400, detail=str(e)) from e
         except RuntimeError as e:
             raise HTTPException(status_code=500, detail=str(e)) from e
@@ -153,4 +189,4 @@ async def post_action(config_id: str, body: ActionBody) -> TableResponse:
     else:  # pragma: no cover
         raise HTTPException(status_code=400, detail="Bad action")
     rows, count = state.build_table()
-    return TableResponse(rows=rows, count=count)
+    return ModelsResponse(rows=rows, count=count)

@@ -17,25 +17,25 @@ async function readJson<T>(r: Response): Promise<T> {
   return r.json() as Promise<T>;
 }
 
-type TableDto = { rows: ConfigRowViewModel[]; count: number };
+type ModelsDto = { rows: ConfigRowViewModel[]; count: number };
 
-export async function fetchTable(): Promise<TableDto> {
-  const r = await fetch(apiUrl("/api/orchestrator/table"), {
+export async function fetchModels(): Promise<ModelsDto> {
+  const r = await fetch(apiUrl("/api/orchestrator/models"), {
     headers: { Accept: "application/json" },
   });
-  return readJson<TableDto>(r);
+  return readJson<ModelsDto>(r);
 }
 
 export async function createConfig(
   fileName: string,
   text: string
-): Promise<TableDto> {
+): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/configs"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ fileName, text }),
   });
-  return readJson<TableDto>(r);
+  return readJson<ModelsDto>(r);
 }
 
 export async function getConfigFileText(
@@ -51,7 +51,7 @@ export async function getConfigFileText(
 export async function updateConfigFileText(
   configId: string,
   text: string
-): Promise<TableDto> {
+): Promise<ModelsDto> {
   const r = await fetch(
     apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/file-text`),
     {
@@ -60,67 +60,46 @@ export async function updateConfigFileText(
       body: JSON.stringify({ text }),
     }
   );
-  return readJson<TableDto>(r);
+  return readJson<ModelsDto>(r);
 }
 
-export async function downloadModel(configId: string): Promise<void> {
-  const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action: "download" }),
-    }
-  );
+type ModelsAction =
+  | "download"
+  | "start"
+  | "stop"
+  | "delete_model"
+  | "delete_config";
+
+async function postModelsAction(
+  configFile: string,
+  action: ModelsAction
+): Promise<void> {
+  const r = await fetch(apiUrl("/api/orchestrator/models/actions"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ action, configFile }),
+  });
   await readJson<unknown>(r);
 }
 
-export async function startModel(configId: string): Promise<void> {
-  const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action: "start" }),
-    }
-  );
-  await readJson<unknown>(r);
+export async function downloadModel(configFile: string): Promise<void> {
+  return postModelsAction(configFile, "download");
 }
 
-export async function stopModel(configId: string): Promise<void> {
-  const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action: "stop" }),
-    }
-  );
-  await readJson<unknown>(r);
+export async function startModel(configFile: string): Promise<void> {
+  return postModelsAction(configFile, "start");
 }
 
-export async function deleteModelWeights(configId: string): Promise<void> {
-  const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action: "delete_model" }),
-    }
-  );
-  await readJson<unknown>(r);
+export async function stopModel(configFile: string): Promise<void> {
+  return postModelsAction(configFile, "stop");
 }
 
-export async function deleteConfigFile(configId: string): Promise<void> {
-  const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ action: "delete_config" }),
-    }
-  );
-  await readJson<unknown>(r);
+export async function deleteModelWeights(configFile: string): Promise<void> {
+  return postModelsAction(configFile, "delete_model");
+}
+
+export async function deleteConfigFile(configFile: string): Promise<void> {
+  return postModelsAction(configFile, "delete_config");
 }
 
 export { ApiError };

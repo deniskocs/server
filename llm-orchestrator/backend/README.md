@@ -15,10 +15,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8765 --reload
 - API: `http://127.0.0.1:8765`
 - `GET /api/health`
 - `POST /api/orchestrator/configs` — тело: `{ "fileName": "name.env", "text": "…" }` (создаёт файл в `CONFIGS_DIR`, имя только `[a-zA-Z0-9._-].env`); при дубликате **409**
-- `GET /api/orchestrator/table` — строки таблицы + `count`
+- `GET /api/orchestrator/models` — строки таблицы (рантайм по конфигам) + `count`
 - `GET /api/orchestrator/configs/{id}/file-text` — текст «.env» для модалки
 - `PUT /api/orchestrator/configs/{id}/file-text` — тело `{ "text": "…" }` перезаписывает файл; ответ — как у таблицы; пока идёт action по этому конфигу — **409**
-- `POST /api/orchestrator/configs/{id}/actions` — body `{"action":"download"|"start"|"stop"|"delete_model"|"delete_config"}`; **`start`/`stop`** требуют настроенного Docker-рантайма (`VLLM_DOCKER=1`, `HOST_MODELS_PATH`, `HOST_LLM_CONFIGS_PATH`, клиент `docker` в образе, сокет); иначе **500** с причиной. Для **`start`** в `.env` обязан быть **`PORT`**, иначе **400**. **Start** — `docker pull` + `docker run` (контейнер **`vllm-orchestrated`**, не `vllm-server` у ручного [deploy-vllm](../../.github/workflows/deploy-vllm.yaml)). **Stop** — `docker stop vllm-orchestrated`. Файл `{stem}.env` на хосте в каталоге `HOST_LLM_CONFIGS_PATH` должен совпадать с конфигом оркестратора. Ошибки pull/run/не настроен Docker — **500**; нет ожидаемого `.env` на хосте — **400** (FileNotFoundError).
+- `POST /api/orchestrator/models/actions` — body `{"action":"download"|"start"|"stop"|"delete_model"|"delete_config","configFile":"my-model.env"}` (файл в `CONFIGS_DIR`, допускается `my-model` без суффикса — сервер допишет `.env`). Неизвестный `configFile` — **404**. **`start`/`stop`** требуют настроенного Docker-рантайма (`VLLM_DOCKER=1`, `HOST_MODELS_PATH`, `HOST_LLM_CONFIGS_PATH`, клиент `docker`, сокет); иначе **500**. Для **`start`** в `.env` обязан быть **`PORT`**, иначе **400**. **Start** — `docker pull` + `docker run` (`vllm-orchestrated`); **Stop** — `docker stop vllm-orchestrated`. Файл `{stem}.env` на хосте в `HOST_LLM_CONFIGS_PATH` должен совпадать с оркестратором. Ошибки pull/run/не настроен Docker — **500**; нет ожидаемого `.env` на хосте — **400** (FileNotFoundError) при `start`.
 
 Список конфигов: файлы `*.env` в `CONFIGS_DIR` (в Docker: `/configs`). При **пустой** папке при старте в неё копируются сиды из [`app/seed_data.py`](app/seed_data.py), чтобы не было пустой таблицы. Добавление через UI/POST пишет новый `.env` на диск.
 

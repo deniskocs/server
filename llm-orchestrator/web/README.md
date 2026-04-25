@@ -8,7 +8,7 @@
 |------|------------|
 | `src/data/types.ts` | Типы для UI. |
 | `src/data/apiBase.ts` | Базовый URL API (`VITE_API_BASE_URL` или пусто → относительный `/api`). |
-| `src/data/repository.ts` | HTTP-клиент к бэкенду: таблица, действия, текст конфига. |
+| `src/data/repository.ts` | HTTP к бэкенду: `GET /api/orchestrator/models`, `POST .../models/actions`, CRUD текста `*.env`. |
 | `src/main.ts` | Вход, отрисовка UI (vanilla TS). |
 | `dist/` | Результат `npm run build` (в git не коммитится). |
 | `Dockerfile` | Сборка: `npm run build` → `nginx:alpine`, раздача статики. |

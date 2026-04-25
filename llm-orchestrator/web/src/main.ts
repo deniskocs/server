@@ -1,7 +1,7 @@
 import "./style.css";
 import type { ConfigRowViewModel, ModelRuntimeState } from "./data/types";
 import {
-  fetchTable,
+  fetchModels,
   getConfigFileText,
   createConfig,
   updateConfigFileText,
@@ -428,7 +428,7 @@ function mount(root: HTMLElement): void {
 
   const refresh = async (): Promise<void> => {
     try {
-      const { rows, count } = await fetchTable();
+      const { rows, count } = await fetchModels();
       addBtn.disabled = false;
       sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: server API`;
       main.replaceChildren(renderTable(rows, refresh));
