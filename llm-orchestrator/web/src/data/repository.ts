@@ -26,6 +26,18 @@ export async function fetchTable(): Promise<TableDto> {
   return readJson<TableDto>(r);
 }
 
+export async function createConfig(
+  fileName: string,
+  text: string
+): Promise<TableDto> {
+  const r = await fetch(apiUrl("/api/orchestrator/configs"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ fileName, text }),
+  });
+  return readJson<TableDto>(r);
+}
+
 export async function getConfigFileText(
   configId: string
 ): Promise<{ fileName: string; text: string } | null> {

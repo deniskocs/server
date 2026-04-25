@@ -1,22 +1,13 @@
-"""In-memory fake runtime (was web/src/data/repository.ts logic)."""
+"""In-memory async runtime; config bodies live in CONFIGS_DIR as `*.env` files."""
 
 from __future__ import annotations
 
 import asyncio
-import copy
 from typing import Any, Literal
 
-from .seed_data import HARDCODED_CONFIGS
+from . import config_files
 
 ModelRuntimeState = Literal["not_on_disk", "downloading", "downloaded", "running"]
-
-
-def _default_initial_state(config_id: str) -> tuple[ModelRuntimeState, str | None]:
-    if config_id == "cfg-vllm-env":
-        return "not_on_disk", None
-    if config_id == "cfg-vllm-llama-env":
-        return "running", "OK: started on :8000"
-    return "downloaded", None
 
 
 def format_config_file_text(doc: dict[str, Any]) -> str:
@@ -41,17 +32,19 @@ def format_config_file_text(doc: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-class OrchestratorSimulation:
-    """Thread-safe async state for fake API delays."""
+def _default_initial_state(file_name: str) -> tuple[ModelRuntimeState, str | None]:
+    if file_name == "vllm.env":
+        return "not_on_disk", None
+    if file_name == "vllm-llama.env":
+        return "running", "OK: started on :8000 (simulated)"
+    return "downloaded", None
 
+
+class OrchestratorSimulation:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
-        self._deleted: set[str] = set()
         self._runtime: dict[str, dict[str, Any]] = {}
         self._pending: set[str] = set()
-
-    def _configs(self) -> list[dict[str, Any]]:
-        return [copy.deepcopy(c) for c in HARDCODED_CONFIGS if c["id"] not in self._deleted]
 
     def _get_or_init(self, config_id: str) -> dict[str, Any]:
         if config_id not in self._runtime:
@@ -59,42 +52,54 @@ class OrchestratorSimulation:
             self._runtime[config_id] = {"state": s, "lastRunMessage": m}
         return self._runtime[config_id]
 
-    def _get_doc(self, config_id: str) -> dict[str, Any] | None:
-        for c in self._configs():
-            if c["id"] == config_id:
-                return c
-        return None
+    def _known_config_id(self, config_id: str) -> bool:
+        return config_id in set(config_files.list_env_filenames())
+
+    def add_config(self, file_name: str, text: str) -> None:
+        name = config_files.validate_env_filename(file_name)
+        if config_files.file_exists(name):
+            raise FileExistsError(name)
+        config_files.write_env_text(name, text)
+        s, m = _default_initial_state(name)
+        self._runtime[name] = {"state": s, "lastRunMessage": m}
 
     def build_table(self) -> tuple[list[dict[str, Any]], int]:
         rows_out: list[dict[str, Any]] = []
-        for i, doc in enumerate(self._configs(), start=1):
-            cid = doc["id"]
-            r = self._get_or_init(cid)
+        for i, file_name in enumerate(config_files.list_env_filenames(), start=1):
+            try:
+                t = config_files.read_env_text(file_name)
+            except OSError:
+                continue
+            display = config_files.display_name_for_file(file_name, t)
+            r = self._get_or_init(file_name)
             st = r["state"]
             rows_out.append(
                 {
-                    "id": f"{cid}-row",
-                    "configId": cid,
+                    "id": f"{file_name}-row",
+                    "configId": file_name,
                     "index": i,
-                    "fileName": doc["fileName"],
-                    "name": doc["servedModelName"],
+                    "fileName": file_name,
+                    "name": display,
                     "state": st,
-                    "actionsLocked": cid in self._pending,
+                    "actionsLocked": file_name in self._pending,
                     "lastRunMessage": r["lastRunMessage"],
                 }
             )
         return rows_out, len(rows_out)
 
     def file_text(self, config_id: str) -> tuple[str, str] | None:
-        doc = self._get_doc(config_id)
-        if not doc:
+        try:
+            t = config_files.read_env_text(config_id)
+        except (ValueError, FileNotFoundError, OSError):
             return None
-        return doc["fileName"], format_config_file_text(doc)
+        return config_id, t
 
     def _set_runtime(self, config_id: str, state: ModelRuntimeState, msg: str | None) -> None:
         self._runtime[config_id] = {"state": state, "lastRunMessage": msg}
 
     async def action_download(self, config_id: str) -> None:
+        if not self._known_config_id(config_id):
+            return
         async with self._lock:
             r = self._get_or_init(config_id)
             if r["state"] != "not_on_disk":
@@ -102,14 +107,14 @@ class OrchestratorSimulation:
             self._set_runtime(config_id, "downloading", None)
         await asyncio.sleep(0.7)
         async with self._lock:
-            if config_id in self._deleted:
-                return
             r = self._get_or_init(config_id)
             if r["state"] != "downloading":
                 return
             self._set_runtime(config_id, "downloaded", "Weights on disk (simulated)")
 
     async def action_start(self, config_id: str) -> None:
+        if not self._known_config_id(config_id):
+            return
         async with self._lock:
             r = self._get_or_init(config_id)
             if r["state"] != "downloaded" or config_id in self._pending:
@@ -118,8 +123,6 @@ class OrchestratorSimulation:
         try:
             await asyncio.sleep(0.45)
             async with self._lock:
-                if config_id in self._deleted:
-                    return
                 self._set_runtime(
                     config_id,
                     "running",
@@ -130,6 +133,8 @@ class OrchestratorSimulation:
                 self._pending.discard(config_id)
 
     async def action_stop(self, config_id: str) -> None:
+        if not self._known_config_id(config_id):
+            return
         async with self._lock:
             r = self._get_or_init(config_id)
             if r["state"] != "running" or config_id in self._pending:
@@ -138,8 +143,6 @@ class OrchestratorSimulation:
         try:
             await asyncio.sleep(0.4)
             async with self._lock:
-                if config_id in self._deleted:
-                    return
                 self._set_runtime(
                     config_id,
                     "downloaded",
@@ -150,6 +153,8 @@ class OrchestratorSimulation:
                 self._pending.discard(config_id)
 
     async def action_delete_model(self, config_id: str) -> None:
+        if not self._known_config_id(config_id):
+            return
         async with self._lock:
             r = self._get_or_init(config_id)
             st = r["state"]
@@ -160,8 +165,6 @@ class OrchestratorSimulation:
         try:
             await asyncio.sleep(ms)
             async with self._lock:
-                if config_id in self._deleted:
-                    return
                 self._set_runtime(
                     config_id,
                     "not_on_disk",
@@ -172,12 +175,13 @@ class OrchestratorSimulation:
                 self._pending.discard(config_id)
 
     def action_delete_config(self, config_id: str) -> bool:
-        if not self._get_doc(config_id):
+        if not self._known_config_id(config_id):
             return False
-        self._deleted.add(config_id)
-        self._pending.discard(config_id)
-        self._runtime.pop(config_id, None)
-        return True
+        ok = config_files.delete_env_file(config_id)
+        if ok:
+            self._pending.discard(config_id)
+            self._runtime.pop(config_id, None)
+        return ok
 
 
 state = OrchestratorSimulation()

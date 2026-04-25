@@ -3,6 +3,7 @@ import type { ConfigRowViewModel, ModelRuntimeState } from "./data/types";
 import {
   fetchTable,
   getConfigFileText,
+  createConfig,
   downloadModel,
   startModel,
   stopModel,
@@ -21,6 +22,23 @@ function el<K extends keyof HTMLElementTagNameMap>(
   if (props?.text) n.textContent = props.text;
   if (props?.html) n.innerHTML = props.html;
   return n;
+}
+
+function apiErrorToMessage(e: unknown): string {
+  if (e instanceof ApiError) {
+    const raw = e.message;
+    try {
+      const j = JSON.parse(raw) as { detail?: string | { msg: string }[] };
+      if (typeof j.detail === "string") return j.detail;
+      if (Array.isArray(j.detail) && j.detail[0] && "msg" in (j.detail[0] as object)) {
+        return String((j.detail[0] as { msg: string }).msg);
+      }
+    } catch {
+      if (raw) return raw;
+    }
+    return `Error ${e.status}`;
+  }
+  return e instanceof Error ? e.message : "Could not save config";
 }
 
 function showConfigTextModal(fileName: string, text: string): void {
@@ -53,10 +71,104 @@ function showConfigTextModal(fileName: string, text: string): void {
   closeBtn.focus();
 }
 
-async function openConfigViewer(configId: string): Promise<void> {
-  const res = await getConfigFileText(configId);
-  if (res == null) return;
-  showConfigTextModal(res.fileName, res.text);
+function showAddConfigDialog(onSaved: () => void | Promise<void>): void {
+  const backdrop = el("div", { className: "config-dlg-backdrop" });
+  const dlg = el("div", { className: "config-dlg config-dlg--form" });
+  const closeAll = (): void => {
+    backdrop.remove();
+    document.removeEventListener("keydown", onKey);
+  };
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") closeAll();
+  };
+  document.addEventListener("keydown", onKey);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeAll();
+  });
+
+  const title = el("div", { className: "config-dlg__title" });
+  title.textContent = "Add config";
+
+  const fileWrap = el("div", { className: "config-dlg__field" });
+  const fileLabel = el("label", {
+    className: "config-dlg__label",
+    text: "File name",
+  });
+  const fileIn = el("input", { className: "config-dlg__input" }) as HTMLInputElement;
+  fileIn.id = "add-cfg-filename";
+  fileLabel.setAttribute("for", fileIn.id);
+  fileIn.type = "text";
+  fileIn.autocomplete = "off";
+  fileIn.placeholder = "e.g. my-vllm.env";
+  fileWrap.append(fileLabel, fileIn);
+
+  const textWrap = el("div", { className: "config-dlg__field" });
+  const textLabel = el("label", {
+    className: "config-dlg__label",
+    text: "Config",
+  });
+  const ta = el("textarea", {
+    className: "config-dlg__textarea",
+  }) as HTMLTextAreaElement;
+  ta.id = "add-cfg-body";
+  textLabel.setAttribute("for", ta.id);
+  ta.rows = 16;
+  ta.placeholder = "# .env for vLLM (one KEY=value per line)";
+  textWrap.append(textLabel, ta);
+
+  const err = el("div", { className: "config-dlg__err" });
+  err.hidden = true;
+
+  const actions = el("div", { className: "config-dlg__actions" });
+  const cancel = el("button", {
+    className: "btn",
+    text: "Cancel",
+  });
+  cancel.type = "button";
+  const save = el("button", {
+    className: "btn btn--save",
+    text: "Save",
+  });
+  save.type = "button";
+  cancel.addEventListener("click", closeAll);
+  save.addEventListener("click", () => {
+    void (async () => {
+      const name = fileIn.value.trim();
+      const body = ta.value;
+      err.textContent = "";
+      err.hidden = true;
+      if (!name) {
+        err.textContent = "Enter a file name.";
+        err.hidden = false;
+        return;
+      }
+      save.disabled = true;
+      try {
+        await createConfig(name, body);
+        closeAll();
+        await onSaved();
+      } catch (e) {
+        err.textContent = apiErrorToMessage(e);
+        err.hidden = false;
+      } finally {
+        save.disabled = false;
+      }
+    })();
+  });
+  actions.append(cancel, save);
+
+  dlg.append(title, fileWrap, textWrap, err, actions);
+  backdrop.append(dlg);
+  document.body.append(backdrop);
+  fileIn.focus();
+}
+
+function openConfigViewer(configId: string): void {
+  void (async () => {
+    const res = await getConfigFileText(configId);
+    if (res == null) return;
+    showConfigTextModal(res.fileName, res.text);
+  })();
 }
 
 function renderActions(
@@ -250,13 +362,18 @@ function mount(root: HTMLElement): void {
   addBtn.disabled = true;
   const foot = el("div", { className: "footer" });
   foot.append(addBtn);
+  addBtn.addEventListener("click", () => {
+    showAddConfigDialog(refresh);
+  });
 
   const refresh = async (): Promise<void> => {
     try {
       const { rows, count } = await fetchTable();
-      sub.textContent = `Configs: ${count} (vllm/llm-configs/*.env) · state: API (simulated on server)`;
+      addBtn.disabled = false;
+      sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: API (simulated on server)`;
       main.replaceChildren(renderTable(rows, refresh));
     } catch (e) {
+      addBtn.disabled = true;
       const msg = e instanceof ApiError ? `API error ${e.status}` : "Cannot reach API";
       sub.textContent = `${msg} — start backend: cd backend && uvicorn app.main:app --port 8765`;
       main.replaceChildren(

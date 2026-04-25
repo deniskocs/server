@@ -311,6 +311,76 @@ body {
   margin-top: 0.1rem;
 }
 
+.config-dlg--form {
+  max-height: min(90vh, 40rem);
+  width: min(44rem, 100%);
+}
+
+.config-dlg__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.config-dlg__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.config-dlg__input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+}
+
+.config-dlg__textarea {
+  margin: 0;
+  min-height: 12rem;
+  max-height: min(50vh, 24rem);
+  padding: 0.55rem 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f8fafc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #1e293b;
+  resize: vertical;
+  box-sizing: border-box;
+  width: 100%;
+  tab-size: 2;
+}
+
+.config-dlg__err {
+  font-size: 0.8rem;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.config-dlg__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn--save {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #fff !important;
+}
+
+.btn--save:disabled {
+  opacity: 0.65;
+}
+
 .footer {
   margin-top: 1rem;
 }

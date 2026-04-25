@@ -14,11 +14,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 8765 --reload
 
 - API: `http://127.0.0.1:8765`
 - `GET /api/health`
+- `POST /api/orchestrator/configs` — тело: `{ "fileName": "name.env", "text": "…" }` (создаёт файл в `CONFIGS_DIR`, имя только `[a-zA-Z0-9._-].env`); при дубликате **409**
 - `GET /api/orchestrator/table` — строки таблицы + `count`
 - `GET /api/orchestrator/configs/{id}/file-text` — текст «.env» для модалки
 - `POST /api/orchestrator/configs/{id}/actions` — body `{"action":"download"|"start"|"stop"|"delete_model"|"delete_config"}`
 
-Данные: [`app/seed_data.py`](app/seed_data.py) (раньше был `web/src/data/hardcoded.ts`).
+Список конфигов: файлы `*.env` в `CONFIGS_DIR` (в Docker: `/configs`). При **пустой** папке при старте в неё копируются сиды из [`app/seed_data.py`](app/seed_data.py), чтобы не было пустой таблицы. Добавление через UI/POST пишет новый `.env` на диск.
 
 ## Вместе с фронтом
 

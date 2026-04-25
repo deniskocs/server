@@ -45,6 +45,22 @@ class ActionBody(BaseModel):
     action: ActionType
 
 
+class AddConfigBody(BaseModel):
+    fileName: str
+    text: str
+
+
+@app.on_event("startup")
+def _orchestrator_seed_configs() -> None:
+    from . import config_files
+    from .seed_data import HARDCODED_CONFIGS
+    from .simulation import format_config_file_text
+
+    config_files.ensure_seeded_from_hardcoded(
+        HARDCODED_CONFIGS, format_config_file_text
+    )
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     out: dict[str, str] = {"status": "ok"}
@@ -59,6 +75,21 @@ def health() -> dict[str, str]:
 
 @app.get("/api/orchestrator/table", response_model=TableResponse)
 def get_table() -> TableResponse:
+    rows, count = state.build_table()
+    return TableResponse(rows=rows, count=count)
+
+
+@app.post("/api/orchestrator/configs", response_model=TableResponse)
+def post_add_config(body: AddConfigBody) -> TableResponse:
+    try:
+        state.add_config(body.fileName, body.text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except FileExistsError as e:
+        raise HTTPException(
+            status_code=409,
+            detail="A config with this file name already exists",
+        ) from e
     rows, count = state.build_table()
     return TableResponse(rows=rows, count=count)
 
