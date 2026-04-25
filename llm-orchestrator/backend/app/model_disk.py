@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_models_path() -> Path | None:
-    """Root where HF-style `models--*` dirs live. None = do not use disk checks (only simulation)."""
+    """Root where HF-style `models--*` dirs live. None = disk checks and download are disabled."""
     raw = os.environ.get("MODELS_DIR", "").strip()
     if not raw:
         return None

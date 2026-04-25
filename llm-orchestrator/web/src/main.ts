@@ -248,7 +248,7 @@ function renderActions(
     const busy = state === "downloading";
     const load = createActionButton("load", { disabled: busy || locked, busy });
     if (busy) {
-      load.title = "Downloading weights… (simulated)";
+      load.title = "Downloading weights…";
       load.setAttribute("aria-label", "Downloading");
     }
     load.addEventListener("click", () => {
@@ -430,7 +430,7 @@ function mount(root: HTMLElement): void {
     try {
       const { rows, count } = await fetchTable();
       addBtn.disabled = false;
-      sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: API (simulated on server)`;
+      sub.textContent = `Configs: ${count} (CONFIGS_DIR / *.env) · state: server API`;
       main.replaceChildren(renderTable(rows, refresh));
     } catch (e) {
       addBtn.disabled = true;

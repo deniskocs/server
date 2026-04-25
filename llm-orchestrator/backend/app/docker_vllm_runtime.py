@@ -46,6 +46,40 @@ def can_run_vllm_docker() -> bool:
     return True
 
 
+def vllm_docker_unavailable_message() -> str:
+    """Human-readable reason why Start/Stop cannot use the Docker runtime."""
+    issues: list[str] = []
+    vdo = (os.environ.get("VLLM_DOCKER", "1").strip() or "1")
+    if vdo not in ("1", "true", "True", "yes"):
+        issues.append(f"VLLM_DOCKER={vdo!r} (set 1 to enable)")
+    if not (os.environ.get("HOST_MODELS_PATH") or "").strip():
+        issues.append("HOST_MODELS_PATH is unset (host path for -v ...:/models)")
+    if not (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip():
+        issues.append("HOST_LLM_CONFIGS_PATH is unset (host path for -v ...:/llm-configs)")
+    if _docker_resolved() is None:
+        issues.append(
+            f"docker client not found (try {docker_cli_path()}, install docker.io in API image, mount /var/run/docker.sock)"
+        )
+    if not issues:
+        return "unknown (can_run_vllm_docker is false)"
+    return "; ".join(issues)
+
+
+def require_vllm_docker() -> None:
+    """
+    Orchestrator always drives vLLM through Docker. Call before docker run / docker stop.
+    """
+    if can_run_vllm_docker():
+        logger.info("vLLM docker runtime: OK, docker client=%s", _docker_cmd())
+        return
+    msg = vllm_docker_unavailable_message()
+    logger.error("vLLM docker runtime: unavailable: %s", msg)
+    raise RuntimeError(
+        f"Cannot use Docker for vLLM: {msg}. "
+        "Fix env and image (see deploy-orchestrator-backend: socket, docker.io, HOST_*)."
+    )
+
+
 def shutil_which(cmd: str) -> str | None:
     from shutil import which
 
@@ -90,6 +124,13 @@ def run_vllm_container(
     hl = (host_listen or "0.0.0.0").strip() or "0.0.0.0"
 
     dc = _docker_cmd()
+    logger.info(
+        "vLLM run: removing any existing %s, pull %s, CONFIG_STEM=%r PORT=%s",
+        VLLM_CONTAINER,
+        VLLM_IMAGE,
+        config_stem,
+        port,
+    )
     # Remove previous instance managed by the orchestrator (name != deploy-vllm vllm-server)
     subprocess.run(
         [dc, "rm", "-f", VLLM_CONTAINER],
@@ -97,7 +138,7 @@ def run_vllm_container(
         text=True,
     )
 
-    logger.info("docker pull %s", VLLM_IMAGE)
+    logger.info("vLLM run: docker pull %s", VLLM_IMAGE)
     pr = subprocess.run(
         [dc, "pull", VLLM_IMAGE],
         check=False,
@@ -143,14 +184,17 @@ def run_vllm_container(
         raise RuntimeError(f"docker run failed: {err}")
 
     cid = (rr.stdout or "").strip()[:12] or "?"
+    logger.info("vLLM run: started container %s id=%s", VLLM_CONTAINER, cid)
     return (
         f"vLLM up: {VLLM_IMAGE} as {VLLM_CONTAINER} → {hl}:{port}, CONFIG_NAME={config_stem} ({cid})"
     )
 
 
 def stop_vllm_container() -> str:
+    dc = _docker_cmd()
+    logger.info("vLLM stop: docker stop %s (cli=%s)", VLLM_CONTAINER, dc)
     st = subprocess.run(
-        [_docker_cmd(), "stop", VLLM_CONTAINER],
+        [dc, "stop", VLLM_CONTAINER],
         capture_output=True,
         text=True,
     )

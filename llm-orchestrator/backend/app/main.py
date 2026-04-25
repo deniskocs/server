@@ -1,4 +1,4 @@
-"""LLM Orchestrator API — fake delays, same behaviour as the former in-browser simulation."""
+"""LLM Orchestrator API: configs on disk, vLLM via Docker on the host, table + actions."""
 
 from __future__ import annotations
 
@@ -123,7 +123,10 @@ def put_file_text(config_id: str, body: UpdateConfigBody) -> TableResponse:
 async def post_action(config_id: str, body: ActionBody) -> TableResponse:
     a = body.action
     if a == ActionType.download:
-        await state.action_download(config_id)
+        try:
+            await state.action_download(config_id)
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
     elif a == ActionType.start:
         try:
             await state.action_start(config_id)
@@ -139,7 +142,10 @@ async def post_action(config_id: str, body: ActionBody) -> TableResponse:
         except RuntimeError as e:
             raise HTTPException(status_code=500, detail=str(e)) from e
     elif a == ActionType.delete_model:
-        await state.action_delete_model(config_id)
+        try:
+            await state.action_delete_model(config_id)
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
     elif a == ActionType.delete_config:
         ok = state.action_delete_config(config_id)
         if not ok:

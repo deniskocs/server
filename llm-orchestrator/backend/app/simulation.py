@@ -1,4 +1,4 @@
-"""In-memory async runtime; config bodies live in CONFIGS_DIR as `*.env` files."""
+"""Runtime state; config bodies live in CONFIGS_DIR as `*.env` files. vLLM is driven only via Docker."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from . import config_files
 from .docker_vllm_runtime import (
-    can_run_vllm_docker,
+    require_vllm_docker,
     run_vllm_container,
     stop_vllm_container,
 )
@@ -20,11 +20,7 @@ from .model_disk import (
     model_weights_appear_on_disk,
     parse_default_model_name,
 )
-from .vllm_env import (
-    log_simulated_deploy_vllm,
-    parse_env_key_values,
-    require_port_for_vllm_start,
-)
+from .vllm_env import parse_env_key_values, require_port_for_vllm_start
 from .vllm_liveness import is_vllm_serving_config_env, wait_until_vllm_reachable
 
 logger = logging.getLogger(__name__)
@@ -62,7 +58,7 @@ def _default_initial_state(file_name: str) -> tuple[ModelRuntimeState, str | Non
     if file_name == "vllm.env":
         return "not_on_disk", None
     if file_name == "vllm-llama.env":
-        return "running", "OK: started on :8000 (simulated)"
+        return "downloaded", None
     return "downloaded", None
 
 
@@ -186,6 +182,7 @@ class OrchestratorSimulation:
     async def action_download(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
+        logger.info("action_download: begin config_id=%s", config_id)
         try:
             t = config_files.read_env_text(config_id)
         except OSError:
@@ -194,6 +191,7 @@ class OrchestratorSimulation:
         root = get_models_path()
 
         if root is not None and not mid:
+            logger.warning("action_download: no DEFAULT_MODEL_NAME in %s", config_id)
             async with self._lock:
                 self._set_runtime(
                     config_id,
@@ -207,12 +205,21 @@ class OrchestratorSimulation:
                 self._sync_runtime_to_models_dir(config_id)
                 r = self._get_or_init(config_id)
                 if r["state"] != "not_on_disk":
+                    logger.info(
+                        "action_download: skip (state=%s, not not_on_disk)",
+                        r["state"],
+                    )
                     return
                 self._set_runtime(
                     config_id, "downloading", "Downloading model (see logs for %…)"
                 )
                 self._pending.add(config_id)
             try:
+                logger.info(
+                    "action_download: huggingface snapshot_download model_id=%r root=%s",
+                    mid,
+                    root,
+                )
                 await asyncio.to_thread(download_snapshot_for_config, mid, root)
             except Exception as e:
                 logger.exception("action_download failed for %s", config_id)
@@ -221,6 +228,7 @@ class OrchestratorSimulation:
                         config_id, "not_on_disk", f"Download failed: {e!s}"[:200]
                     )
             else:
+                logger.info("action_download: finished OK for %s", config_id)
                 async with self._lock:
                     r2 = self._get_or_init(config_id)
                     if r2["state"] == "downloading":
@@ -232,24 +240,18 @@ class OrchestratorSimulation:
                     self._pending.discard(config_id)
             return
 
-        async with self._lock:
-            self._sync_runtime_to_models_dir(config_id)
-            r = self._get_or_init(config_id)
-            if r["state"] != "not_on_disk":
-                return
-            self._set_runtime(config_id, "downloading", None)
-        await asyncio.sleep(0.7)
-        async with self._lock:
-            r = self._get_or_init(config_id)
-            if r["state"] != "downloading":
-                return
-            self._set_runtime(
-                config_id, "downloaded", "Weights on disk (simulated; set MODELS_DIR for real download)"
-            )
+        logger.error(
+            "action_download: MODELS_DIR unset (cannot download); set MODELS_DIR in API env"
+        )
+        raise RuntimeError(
+            "MODELS_DIR is not set: cannot download weights. "
+            "Set MODELS_DIR in the API process (e.g. -e MODELS_DIR=/models) and mount host models."
+        )
 
     async def action_start(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
+        logger.info("action_start: begin config_id=%s", config_id)
         try:
             t = config_files.read_env_text(config_id)
         except OSError:
@@ -257,6 +259,9 @@ class OrchestratorSimulation:
         env_map = parse_env_key_values(t)
         port = require_port_for_vllm_start(env_map)
         if await asyncio.to_thread(is_vllm_serving_config_env, t):
+            logger.info(
+                "action_start: vLLM already serving /v1/models on this PORT, skip"
+            )
             async with self._lock:
                 self._set_runtime(
                     config_id,
@@ -269,31 +274,38 @@ class OrchestratorSimulation:
             self._sync_runtime_to_models_dir(config_id)
             r = self._get_or_init(config_id)
             if r["state"] not in ("downloaded", "running") or config_id in self._pending:
+                logger.info(
+                    "action_start: skip (state=%s, pending=%s)",
+                    r["state"],
+                    config_id in self._pending,
+                )
                 return
             self._pending.add(config_id)
         try:
+            require_vllm_docker()
             config_stem = Path(config_id).stem
             host_listen = (env_map.get("HOST") or "0.0.0.0").strip() or "0.0.0.0"
-            if can_run_vllm_docker():
-                run_msg = await asyncio.to_thread(
-                    run_vllm_container, config_stem, port, host_listen
+            logger.info(
+                "action_start: docker run CONFIG_STEM=%r PORT=%s HOST=%s",
+                config_stem,
+                port,
+                host_listen,
+            )
+            run_msg = await asyncio.to_thread(
+                run_vllm_container, config_stem, port, host_listen
+            )
+            logger.info("action_start: waiting for /v1/models (wait_until_vllm_reachable)")
+            up = await asyncio.to_thread(wait_until_vllm_reachable, env_map)
+            if not up:
+                run_msg = (
+                    f"{run_msg} — /v1/models not ready in time; "
+                    "see vLLM logs; table shows stopped until the API answers"
                 )
-                up = await asyncio.to_thread(wait_until_vllm_reachable, env_map)
-                if not up:
-                    run_msg = (
-                        f"{run_msg} — /v1/models not ready in time; "
-                        "see vLLM logs; table shows stopped until the API answers"
-                    )
-                ok_live = await asyncio.to_thread(is_vllm_serving_config_env, t)
-                async with self._lock:
-                    st: ModelRuntimeState = "running" if ok_live else "downloaded"
-                    self._set_runtime(config_id, st, run_msg)
-            else:
-                mid = parse_default_model_name(t)
-                run_msg = log_simulated_deploy_vllm(config_id, env_map, port, mid)
-                await asyncio.sleep(0.45)
-                async with self._lock:
-                    self._set_runtime(config_id, "running", run_msg)
+            ok_live = await asyncio.to_thread(is_vllm_serving_config_env, t)
+            logger.info("action_start: liveness after run ok_live=%s", ok_live)
+            async with self._lock:
+                st: ModelRuntimeState = "running" if ok_live else "downloaded"
+                self._set_runtime(config_id, st, run_msg)
         finally:
             async with self._lock:
                 self._pending.discard(config_id)
@@ -301,6 +313,7 @@ class OrchestratorSimulation:
     async def action_stop(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
+        logger.info("action_stop: begin config_id=%s", config_id)
         try:
             t = config_files.read_env_text(config_id)
         except OSError:
@@ -311,16 +324,20 @@ class OrchestratorSimulation:
             self._sync_runtime_to_models_dir(config_id)
             r = self._get_or_init(config_id)
             if config_id in self._pending:
+                logger.info("action_stop: skip (action pending)")
                 return
             if not live and r["state"] != "running":
+                logger.info(
+                    "action_stop: nothing to do live=%s state=%s",
+                    live,
+                    r["state"],
+                )
                 return
             self._pending.add(config_id)
         try:
-            if can_run_vllm_docker():
-                stop_msg = await asyncio.to_thread(stop_vllm_container)
-            else:
-                await asyncio.sleep(0.4)
-                stop_msg = "Last run: stopped (simulated)"
+            require_vllm_docker()
+            stop_msg = await asyncio.to_thread(stop_vllm_container)
+            logger.info("action_stop: %s", stop_msg)
             async with self._lock:
                 self._set_runtime(config_id, "downloaded", stop_msg)
         finally:
@@ -330,6 +347,7 @@ class OrchestratorSimulation:
     async def action_delete_model(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
+        logger.info("action_delete_model: begin config_id=%s", config_id)
         try:
             t = config_files.read_env_text(config_id)
         except OSError:
@@ -338,6 +356,7 @@ class OrchestratorSimulation:
         root = get_models_path()
 
         if await asyncio.to_thread(is_vllm_serving_config_env, t):
+            logger.warning("action_delete_model: vLLM still up on this PORT; stop first")
             return
 
         if root is not None and mid:
@@ -372,28 +391,14 @@ class OrchestratorSimulation:
             return
 
         if root is not None and not mid:
-            logger.warning("delete model weights: no DEFAULT_MODEL_NAME in %s", config_id)
+            logger.warning("action_delete_model: no DEFAULT_MODEL_NAME in %s", config_id)
             return
 
-        async with self._lock:
-            self._sync_runtime_to_models_dir(config_id)
-            r = self._get_or_init(config_id)
-            st = r["state"]
-            if st in ("not_on_disk", "downloading") or config_id in self._pending:
-                return
-            self._pending.add(config_id)
-            ms = 0.55 if st == "running" else 0.4
-        try:
-            await asyncio.sleep(ms)
-            async with self._lock:
-                self._set_runtime(
-                    config_id,
-                    "not_on_disk",
-                    "Model weights no longer on disk (simulated; set MODELS_DIR to delete for real)",
-                )
-        finally:
-            async with self._lock:
-                self._pending.discard(config_id)
+        logger.error("action_delete_model: MODELS_DIR unset")
+        raise RuntimeError(
+            "MODELS_DIR is not set: cannot delete model directories from disk. "
+            "Set MODELS_DIR and mount the models volume."
+        )
 
     def action_delete_config(self, config_id: str) -> bool:
         if not self._known_config_id(config_id):

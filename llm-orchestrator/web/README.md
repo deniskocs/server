@@ -54,6 +54,6 @@ docker run --rm -p 8080:80 llm-orchestrator-web:local
 
 Секреты: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_ACCESS_TOKEN`, `SSH_PRIVATE_KEY_DEPLOY_TO_MAC_SERVER_BASE64`, `MAC_HOST`, `MAC_USER`. Тег/порт — в yaml. **linux/arm64** (Apple Silicon); иначе смени `platforms` в `build-push`.
 
-**Бэкенд** (сид-данные и симуляция): каталог [`../backend`](../backend).
+**Бэкенд** (сиды, API, vLLM через Docker): каталог [`../backend`](../backend).
 
 См. общую спецификацию: [README в `llm-orchestrator`](../README.md).

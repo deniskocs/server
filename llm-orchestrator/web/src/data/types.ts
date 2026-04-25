@@ -38,7 +38,7 @@ export interface ConfigRowViewModel {
   /** Served model name (SERVED_MODEL_NAME). */
   name: string;
   state: ModelRuntimeState;
-  /** When true, simulates in-flight request; action buttons are disabled. */
+  /** When true, a request is in flight; action buttons are disabled. */
   actionsLocked: boolean;
   lastRunMessage: string | null;
 }

@@ -1,4 +1,4 @@
-"""Parse .env and simulate deploy-vllm + vllm/docker-entrypoint.sh behaviour for Start."""
+"""Parse .env and helpers aligned with vllm/docker-entrypoint + deploy workflows."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def require_port_for_vllm_start(env: dict[str, str]) -> int:
 
 
 def build_vllm_args_preview(env: dict[str, str]) -> str:
-    """Mirror vllm/docker-entrypoint.sh VLLM_ARGS for logs."""
+    """Mirror vllm/docker-entrypoint.sh VLLM_ARGS (for debug logs if needed)."""
     parts: list[str] = []
     if (env.get("VLLM_QUANTIZATION") or "").strip():
         parts.append(f"--quantization {env['VLLM_QUANTIZATION'].strip()}")
@@ -70,58 +70,3 @@ def build_vllm_args_preview(env: dict[str, str]) -> str:
     if (env.get("VLLM_TOOL_CALL_PARSER") or "").strip():
         parts.append(f"--tool-call-parser {env['VLLM_TOOL_CALL_PARSER'].strip()}")
     return " ".join(parts) if parts else "(no VLLM_* in .env beyond defaults)"
-
-
-def log_simulated_deploy_vllm(
-    config_file: str,
-    env: dict[str, str],
-    port: int,
-    model_id: str | None,
-) -> str:
-    """
-    What deploy-vllm / entrypoint would use; returns short lastRunMessage line.
-    Full detail goes to logger INFO.
-    """
-    config_name = Path(config_file).stem
-    host = (env.get("HOST") or "0.0.0.0").strip() or "0.0.0.0"
-    default_m = (env.get("DEFAULT_MODEL_NAME") or "").strip()
-    served = (env.get("SERVED_MODEL_NAME") or default_m or "").strip()
-    model_path = f"/models/{default_m}" if default_m else "/models/<DEFAULT_MODEL_NAME>"
-
-    vllm_args = build_vllm_args_preview(env)
-
-    logger.info(
-        "[sim deploy-vllm] CONFIG_NAME=%r (file %r) as in .github/workflows/deploy-vllm.yaml + docker-entrypoint.sh",
-        config_name,
-        config_file,
-    )
-    logger.info(
-        (
-            "[sim deploy-vllm] would: docker run --name %s -p %d:%d -v …/models:/models "
-            "-e API_KEY=%s -e CONFIG_NAME=%s -e PORT=%d -e HOST=%s --gpus device=0 %s"
-        ),
-        VLLM_CONTAINER,
-        port,
-        port,
-        DEFAULT_GATED_API_KEY,
-        config_name,
-        port,
-        host,
-        VLLM_IMAGE,
-    )
-    logger.info(
-        "[sim deploy-vllm] entrypoint: . /llm-configs/%s.env → MODEL_NAME=%r → %s; SERVED_MODEL_NAME=%r",
-        config_name,
-        default_m,
-        model_path,
-        served,
-    )
-    logger.info("[sim deploy-vllm] vllm arg preview: %s", vllm_args)
-    logger.info(
-        "[sim deploy-vllm] openai server: --host %s --port %d --served-model-name %r (simulated, no real container start)",
-        host,
-        port,
-        served,
-    )
-
-    return f"OK: sim vLLM on {host}:{port} (config {config_name}, model path {model_path})"
