@@ -41,4 +41,6 @@ export interface ConfigRowViewModel {
   /** When true, a request is in flight; action buttons are disabled. */
   actionsLocked: boolean;
   lastRunMessage: string | null;
+  /** While `state === "downloading"`: 0–100, or null (size not known yet / indeterminate). */
+  downloadProgress?: number | null;
 }

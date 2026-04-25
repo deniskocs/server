@@ -158,6 +158,21 @@ body {
   word-break: break-word;
 }
 
+.download-progress {
+  height: 0.25rem;
+  border-radius: 0.12rem;
+  background: #e4e4e7;
+  overflow: hidden;
+  margin: 0.1rem 0 0.05rem;
+}
+
+.download-progress__fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

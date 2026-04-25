@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from . import config_files
-from .simulation import state
+from .orchestrator import state
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="LLM Orchestrator", version="0.1.0")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from pathlib import Path
 from typing import Any, Literal
 
@@ -32,11 +33,14 @@ def _default_initial_state(_file_name: str) -> tuple[ModelRuntimeState, str | No
     return "downloaded", None
 
 
-class OrchestratorSimulation:
+class Orchestrator:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
         self._runtime: dict[str, dict[str, Any]] = {}
         self._pending: set[str] = set()
+        # HuggingFace download progress (worker thread) — only meaningful while state is "downloading".
+        self._dl_progress_lock = threading.Lock()
+        self._download_progress: dict[str, float | None] = {}
 
     def _get_or_init(self, config_id: str) -> dict[str, Any]:
         if config_id not in self._runtime:
@@ -125,6 +129,11 @@ class OrchestratorSimulation:
             display = config_files.display_name_for_file(file_name, t)
             r = self._get_or_init(file_name)
             st = self._row_state_from_disk_and_runtime(t, r)
+            dl_pct: float | None = None
+            if st == "downloading":
+                with self._dl_progress_lock:
+                    dl_pct = self._download_progress.get(file_name)
+
             rows_out.append(
                 {
                     "id": f"{file_name}-row",
@@ -135,6 +144,7 @@ class OrchestratorSimulation:
                     "state": st,
                     "actionsLocked": file_name in self._pending,
                     "lastRunMessage": r["lastRunMessage"],
+                    "downloadProgress": dl_pct,
                 }
             )
         return rows_out, len(rows_out)
@@ -181,16 +191,25 @@ class OrchestratorSimulation:
                     )
                     return
                 self._set_runtime(
-                    config_id, "downloading", "Downloading model (see logs for %…)"
+                    config_id, "downloading", "Downloading from Hugging Face"
                 )
                 self._pending.add(config_id)
+                with self._dl_progress_lock:
+                    self._download_progress[config_id] = 0.0
             try:
                 logger.info(
                     "action_download: huggingface snapshot_download model_id=%r root=%s",
                     mid,
                     root,
                 )
-                await asyncio.to_thread(download_snapshot_for_config, mid, root)
+
+                def _report(p: float | None) -> None:
+                    with self._dl_progress_lock:
+                        self._download_progress[config_id] = p
+
+                await asyncio.to_thread(
+                    download_snapshot_for_config, mid, root, _report
+                )
             except Exception as e:
                 logger.exception("action_download failed for %s", config_id)
                 async with self._lock:
@@ -206,6 +225,8 @@ class OrchestratorSimulation:
                             config_id, "downloaded", "Weights on disk"
                         )
             finally:
+                with self._dl_progress_lock:
+                    self._download_progress.pop(config_id, None)
                 async with self._lock:
                     self._pending.discard(config_id)
             return
@@ -380,4 +401,4 @@ class OrchestratorSimulation:
         return ok
 
 
-state = OrchestratorSimulation()
+state = Orchestrator()

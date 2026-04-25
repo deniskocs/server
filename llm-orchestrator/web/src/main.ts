@@ -253,10 +253,15 @@ function renderActions(
     }
     load.addEventListener("click", () => {
       void (async () => {
+        const poll = window.setInterval(() => {
+          void onRefresh();
+        }, 400);
         try {
           await downloadModel(configId);
         } catch (e) {
           console.error(e);
+        } finally {
+          clearInterval(poll);
         }
         await onRefresh();
       })();
@@ -365,11 +370,23 @@ function renderStatus(r: ConfigRowViewModel): HTMLElement {
   const h = el("div", { className: "status-headline" });
   h.textContent = statusHeadline(r.state);
   h.classList.add("status--" + r.state);
-  const detail = el("div", {
-    className: "status-detail",
-    text: r.lastRunMessage ?? "—",
-  });
-  wrap.append(h, detail);
+  const detail = el("div", { className: "status-detail" });
+  if (r.state === "downloading") {
+    if (r.downloadProgress != null) {
+      detail.textContent = `${r.downloadProgress.toFixed(1)}%`;
+      const bar = el("div", { className: "download-progress" });
+      const fill = el("div", { className: "download-progress__fill" });
+      fill.style.width = `${Math.min(100, Math.max(0, r.downloadProgress))}%`;
+      bar.append(fill);
+      wrap.append(h, bar, detail);
+    } else {
+      detail.textContent = "Preparing…";
+      wrap.append(h, detail);
+    }
+  } else {
+    detail.textContent = r.lastRunMessage ?? "—";
+    wrap.append(h, detail);
+  }
   return wrap;
 }
 

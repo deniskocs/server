@@ -73,32 +73,34 @@ type ModelsAction =
 async function postModelsAction(
   configFile: string,
   action: ModelsAction
-): Promise<void> {
+): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/models/actions"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ action, configFile }),
   });
-  await readJson<unknown>(r);
+  return readJson<ModelsDto>(r);
 }
 
-export async function downloadModel(configFile: string): Promise<void> {
+export async function downloadModel(configFile: string): Promise<ModelsDto> {
   return postModelsAction(configFile, "download");
 }
 
-export async function startModel(configFile: string): Promise<void> {
+export async function startModel(configFile: string): Promise<ModelsDto> {
   return postModelsAction(configFile, "start");
 }
 
-export async function stopModel(configFile: string): Promise<void> {
+export async function stopModel(configFile: string): Promise<ModelsDto> {
   return postModelsAction(configFile, "stop");
 }
 
-export async function deleteModelWeights(configFile: string): Promise<void> {
+export async function deleteModelWeights(configFile: string): Promise<ModelsDto> {
   return postModelsAction(configFile, "delete_model");
 }
 
-export async function deleteConfigFile(configFile: string): Promise<void> {
+export async function deleteConfigFile(
+  configFile: string
+): Promise<ModelsDto> {
   return postModelsAction(configFile, "delete_config");
 }
 
