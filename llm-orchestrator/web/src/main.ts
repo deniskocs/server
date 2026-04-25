@@ -109,8 +109,7 @@ function renderHostStats(s: HostStats): HTMLElement {
       hostStatsRow("MODELS_DIR path", m.path),
       hostStatsRow(
         "Size of MODELS_DIR (folder)",
-        `${formatBytes(m.dirSizeBytes)} / ${formatBytes(fs.freeBytes)} (free)`,
-        "Left: all files in this tree (weights, cache). After slash: free space on the same disk volume. The (free) tag marks the free value after the slash."
+        `${formatBytes(m.dirSizeBytes)} / ${formatBytes(fs.freeBytes)} (free)`
       )
     );
   } else {
