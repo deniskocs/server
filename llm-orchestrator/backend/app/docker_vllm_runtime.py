@@ -93,11 +93,13 @@ def _docker_cmd() -> str:
     return r
 
 
-def _resolve_existing_dir(p: str) -> Path:
-    path = Path(p).expanduser().resolve()
-    if not path.is_dir():
-        raise FileNotFoundError(f"not a directory: {path}")
-    return path
+def _host_bind_path(p: str) -> str:
+    """
+    String passed to `docker run -v host:cont`. The path is resolved by the **Docker daemon
+    on the host** — we must not use Path.is_dir() from inside the API container, because
+    HOST_MODELS_PATH / HOST_LLM_CONFIGS_PATH are often *not* mounted there.
+    """
+    return str(Path(p).expanduser())
 
 
 def run_vllm_container(
@@ -109,17 +111,23 @@ def run_vllm_container(
     Pull image, remove old orchestrator vLLM container (see VLLM_CONTAINER in
     vllm_env), docker run with the same mounts as deploy-vllm.
     """
+    from . import config_files
+
     m_root = (os.environ.get("HOST_MODELS_PATH") or "").strip()
     c_root = (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip()
     if not m_root or not c_root:
         raise RuntimeError("HOST_MODELS_PATH and HOST_LLM_CONFIGS_PATH are required")
-    mpath = _resolve_existing_dir(m_root)
-    cpath = _resolve_existing_dir(c_root)
-    cfg = cpath / f"{config_stem}.env"
-    if not cfg.is_file():
+    mpath = _host_bind_path(m_root)
+    cpath = _host_bind_path(c_root)
+    # Same .env the UI edits (CONFIGS_DIR); host bind paths must point at this dir for vLLM
+    env_name = f"{config_stem}.env"
+    try:
+        config_files.read_env_text(env_name)
+    except FileNotFoundError as e:
         raise FileNotFoundError(
-            f"Expected .env for CONFIG_NAME on host: {cfg} (mount HOST_LLM_CONFIGS_PATH = orchestrator's configs directory)"
-        )
+            f"Config not found in CONFIGS_DIR: {env_name}. "
+            "On the Docker host, HOST_LLM_CONFIGS_PATH should be the same directory."
+        ) from e
 
     hl = (host_listen or "0.0.0.0").strip() or "0.0.0.0"
 
