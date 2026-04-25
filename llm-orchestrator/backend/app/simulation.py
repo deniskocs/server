@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any, Literal
 
 from . import config_files
+from .docker_vllm_runtime import (
+    can_run_vllm_docker,
+    run_vllm_container,
+    stop_vllm_container,
+)
 from .hf_download import download_snapshot_for_config
 from .model_disk import (
     delete_model_weight_dirs,
@@ -14,6 +20,12 @@ from .model_disk import (
     model_weights_appear_on_disk,
     parse_default_model_name,
 )
+from .vllm_env import (
+    log_simulated_deploy_vllm,
+    parse_env_key_values,
+    require_port_for_vllm_start,
+)
+from .vllm_liveness import is_vllm_serving_config_env, wait_until_vllm_reachable
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +35,13 @@ ModelRuntimeState = Literal["not_on_disk", "downloading", "downloaded", "running
 def format_config_file_text(doc: dict[str, Any]) -> str:
     v = doc["vllm"]
     lines = [
-        f"# vllm/llm-configs/{doc['fileName']}",
+        f"# llm-orchestrator/vllm-runner/llm-configs/{doc['fileName']}",
         f"DEFAULT_MODEL_NAME={doc['defaultModelName']}",
         f"SERVED_MODEL_NAME={doc['servedModelName']}",
+        "",
+        "# Сервер (deploy-vllm + docker-entrypoint.sh; PORT обязателен для Start в оркестраторе)",
+        "PORT=8000",
+        "HOST=0.0.0.0",
         "",
         "# Параметры vLLM",
         f"VLLM_QUANTIZATION={v.get('quantization') or ''}",
@@ -68,32 +84,30 @@ class OrchestratorSimulation:
     def _row_state_from_disk_and_runtime(
         self, env_text: str, r: dict[str, Any]
     ) -> ModelRuntimeState:
-        """In-flight and running stay simulated; not_on_disk / downloaded follow MODELS_DIR when set."""
+        """
+        not_on_disk / downloaded from MODELS_DIR; **running** only if /v1/models is up on PORT
+        (see vllm_liveness: VLLM_LIVENESS_HOST for probing from a container).
+        """
         rt: ModelRuntimeState = r["state"]
         if rt == "downloading":
             return "downloading"
-        if rt == "running":
-            root = get_models_path()
-            mid = parse_default_model_name(env_text)
-            if (
-                root is not None
-                and mid
-                and not model_weights_appear_on_disk(root, mid)
-            ):
-                return "not_on_disk"
-            return "running"
 
+        live = is_vllm_serving_config_env(env_text)
         root = get_models_path()
         mid = parse_default_model_name(env_text)
-        if root is not None and mid is not None:
-            return (
-                "downloaded"
-                if model_weights_appear_on_disk(root, mid)
-                else "not_on_disk"
-            )
+
+        if root is not None and mid is not None and not model_weights_appear_on_disk(
+            root, mid
+        ):
+            return "not_on_disk"
         if root is not None and mid is None:
             return "not_on_disk"
-        return rt
+
+        if live:
+            return "running"
+        if root is not None and mid is not None:
+            return "downloaded"
+        return "downloaded" if rt in ("downloaded", "running") else rt
 
     def _sync_runtime_to_models_dir(self, config_id: str) -> None:
         """Align in-memory not_on_disk ↔ downloaded with MODELS_DIR when MODELS_DIR is set."""
@@ -124,6 +138,16 @@ class OrchestratorSimulation:
         config_files.write_env_text(name, text)
         s, m = _default_initial_state(name)
         self._runtime[name] = {"state": s, "lastRunMessage": m}
+
+    def update_config_text(self, config_id: str, text: str) -> None:
+        if not self._known_config_id(config_id):
+            raise FileNotFoundError(config_id)
+        if config_id in self._pending:
+            raise ValueError(
+                "This config has an action in progress; try again in a moment"
+            )
+        config_files.write_env_text(config_id, text)
+        self._sync_runtime_to_models_dir(config_id)
 
     def build_table(self) -> tuple[list[dict[str, Any]], int]:
         rows_out: list[dict[str, Any]] = []
@@ -226,20 +250,50 @@ class OrchestratorSimulation:
     async def action_start(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
-        async with self._lock:
-            self._sync_runtime_to_models_dir(config_id)
-            r = self._get_or_init(config_id)
-            if r["state"] != "downloaded" or config_id in self._pending:
-                return
-            self._pending.add(config_id)
         try:
-            await asyncio.sleep(0.45)
+            t = config_files.read_env_text(config_id)
+        except OSError:
+            return
+        env_map = parse_env_key_values(t)
+        port = require_port_for_vllm_start(env_map)
+        if await asyncio.to_thread(is_vllm_serving_config_env, t):
             async with self._lock:
                 self._set_runtime(
                     config_id,
                     "running",
-                    "OK: started on :8000 (simulated)",
+                    "vLLM already up: /v1/models OK on PORT (see liveness host)",
                 )
+            return
+
+        async with self._lock:
+            self._sync_runtime_to_models_dir(config_id)
+            r = self._get_or_init(config_id)
+            if r["state"] not in ("downloaded", "running") or config_id in self._pending:
+                return
+            self._pending.add(config_id)
+        try:
+            config_stem = Path(config_id).stem
+            host_listen = (env_map.get("HOST") or "0.0.0.0").strip() or "0.0.0.0"
+            if can_run_vllm_docker():
+                run_msg = await asyncio.to_thread(
+                    run_vllm_container, config_stem, port, host_listen
+                )
+                up = await asyncio.to_thread(wait_until_vllm_reachable, env_map)
+                if not up:
+                    run_msg = (
+                        f"{run_msg} — /v1/models not ready in time; "
+                        "see vLLM logs; table shows stopped until the API answers"
+                    )
+                ok_live = await asyncio.to_thread(is_vllm_serving_config_env, t)
+                async with self._lock:
+                    st: ModelRuntimeState = "running" if ok_live else "downloaded"
+                    self._set_runtime(config_id, st, run_msg)
+            else:
+                mid = parse_default_model_name(t)
+                run_msg = log_simulated_deploy_vllm(config_id, env_map, port, mid)
+                await asyncio.sleep(0.45)
+                async with self._lock:
+                    self._set_runtime(config_id, "running", run_msg)
         finally:
             async with self._lock:
                 self._pending.discard(config_id)
@@ -247,20 +301,28 @@ class OrchestratorSimulation:
     async def action_stop(self, config_id: str) -> None:
         if not self._known_config_id(config_id):
             return
+        try:
+            t = config_files.read_env_text(config_id)
+        except OSError:
+            return
+        live = await asyncio.to_thread(is_vllm_serving_config_env, t)
+
         async with self._lock:
             self._sync_runtime_to_models_dir(config_id)
             r = self._get_or_init(config_id)
-            if r["state"] != "running" or config_id in self._pending:
+            if config_id in self._pending:
+                return
+            if not live and r["state"] != "running":
                 return
             self._pending.add(config_id)
         try:
-            await asyncio.sleep(0.4)
+            if can_run_vllm_docker():
+                stop_msg = await asyncio.to_thread(stop_vllm_container)
+            else:
+                await asyncio.sleep(0.4)
+                stop_msg = "Last run: stopped (simulated)"
             async with self._lock:
-                self._set_runtime(
-                    config_id,
-                    "downloaded",
-                    "Last run: stopped (simulated)",
-                )
+                self._set_runtime(config_id, "downloaded", stop_msg)
         finally:
             async with self._lock:
                 self._pending.discard(config_id)
@@ -274,6 +336,9 @@ class OrchestratorSimulation:
             return
         mid = parse_default_model_name(t)
         root = get_models_path()
+
+        if await asyncio.to_thread(is_vllm_serving_config_env, t):
+            return
 
         if root is not None and mid:
             async with self._lock:

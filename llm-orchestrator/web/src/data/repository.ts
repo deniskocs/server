@@ -48,6 +48,21 @@ export async function getConfigFileText(
   return readJson<{ fileName: string; text: string }>(r);
 }
 
+export async function updateConfigFileText(
+  configId: string,
+  text: string
+): Promise<TableDto> {
+  const r = await fetch(
+    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/file-text`),
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ text }),
+    }
+  );
+  return readJson<TableDto>(r);
+}
+
 export async function downloadModel(configId: string): Promise<void> {
   const r = await fetch(
     apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/actions`),

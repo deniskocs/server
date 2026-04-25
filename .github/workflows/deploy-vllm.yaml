@@ -1,3 +1,5 @@
+# Перезапуск контейнера vllm-server на сервере (образ deniskocs/learn-english:vllm-1.0.0).
+# Сборка и push образа — в deploy-orchestrator-backend.yaml (Decaf / vllm-runner).
 name: Deploy vLLM service to local server
 
 on:

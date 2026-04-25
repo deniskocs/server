@@ -4,6 +4,7 @@ import {
   fetchTable,
   getConfigFileText,
   createConfig,
+  updateConfigFileText,
   downloadModel,
   startModel,
   stopModel,
@@ -41,9 +42,14 @@ function apiErrorToMessage(e: unknown): string {
   return e instanceof Error ? e.message : "Could not save config";
 }
 
-function showConfigTextModal(fileName: string, text: string): void {
+function showEditConfigDialog(
+  configId: string,
+  fileName: string,
+  text: string,
+  onSaved: () => void | Promise<void>
+): void {
   const backdrop = el("div", { className: "config-dlg-backdrop" });
-  const dlg = el("div", { className: "config-dlg" });
+  const dlg = el("div", { className: "config-dlg config-dlg--form" });
   const closeAll = (): void => {
     backdrop.remove();
     document.removeEventListener("keydown", onKey);
@@ -55,20 +61,71 @@ function showConfigTextModal(fileName: string, text: string): void {
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) closeAll();
   });
+
   const title = el("div", { className: "config-dlg__title" });
-  title.textContent = fileName;
-  const pre = el("pre", { className: "config-dlg__pre" });
-  pre.textContent = text;
-  const closeBtn = el("button", {
-    className: "btn primary config-dlg__close",
-    text: "Close",
+  title.textContent = "Edit config";
+
+  const fileWrap = el("div", { className: "config-dlg__field" });
+  const fileLabel = el("label", {
+    className: "config-dlg__label",
+    text: "File",
   });
-  closeBtn.type = "button";
-  closeBtn.addEventListener("click", closeAll);
-  dlg.append(title, pre, closeBtn);
+  const fileIn = el("input", { className: "config-dlg__input" }) as HTMLInputElement;
+  fileIn.id = "edit-cfg-filename";
+  fileLabel.setAttribute("for", fileIn.id);
+  fileIn.type = "text";
+  fileIn.readOnly = true;
+  fileIn.value = fileName;
+  fileIn.tabIndex = -1;
+  fileWrap.append(fileLabel, fileIn);
+
+  const textWrap = el("div", { className: "config-dlg__field" });
+  const textLabel = el("label", {
+    className: "config-dlg__label",
+    text: "Contents",
+  });
+  const ta = el("textarea", {
+    className: "config-dlg__textarea",
+  }) as HTMLTextAreaElement;
+  ta.id = "edit-cfg-body";
+  textLabel.setAttribute("for", ta.id);
+  ta.rows = 18;
+  ta.value = text;
+  textWrap.append(textLabel, ta);
+
+  const err = el("div", { className: "config-dlg__err" });
+  err.hidden = true;
+
+  const actions = el("div", { className: "config-dlg__actions" });
+  const cancel = el("button", { className: "btn", text: "Cancel" });
+  cancel.type = "button";
+  const save = el("button", { className: "btn btn--save", text: "Save" });
+  save.type = "button";
+  cancel.addEventListener("click", closeAll);
+  save.addEventListener("click", () => {
+    void (async () => {
+      err.textContent = "";
+      err.hidden = true;
+      save.disabled = true;
+      try {
+        await updateConfigFileText(configId, ta.value);
+        closeAll();
+        await onSaved();
+      } catch (e) {
+        err.textContent = apiErrorToMessage(e);
+        err.hidden = false;
+      } finally {
+        save.disabled = false;
+      }
+    })();
+  });
+  actions.append(cancel, save);
+
+  dlg.append(title, fileWrap, textWrap, err, actions);
   backdrop.append(dlg);
   document.body.append(backdrop);
-  closeBtn.focus();
+  ta.focus();
+  ta.setSelectionRange(0, 0);
 }
 
 function showAddConfigDialog(onSaved: () => void | Promise<void>): void {
@@ -163,11 +220,14 @@ function showAddConfigDialog(onSaved: () => void | Promise<void>): void {
   fileIn.focus();
 }
 
-function openConfigViewer(configId: string): void {
+function openConfigEditor(
+  configId: string,
+  onRefresh: () => void | Promise<void>
+): void {
   void (async () => {
     const res = await getConfigFileText(configId);
     if (res == null) return;
-    showConfigTextModal(res.fileName, res.text);
+    showEditConfigDialog(configId, res.fileName, res.text, onRefresh);
   })();
 }
 
@@ -180,7 +240,7 @@ function renderActions(
   const { configId, actionsLocked: locked } = r;
   const view = createActionButton("viewConfig");
   view.addEventListener("click", () => {
-    void openConfigViewer(configId);
+    void openConfigEditor(configId, onRefresh);
   });
   wrap.append(view);
 

@@ -1,7 +1,6 @@
-# Деплой API оркестратора на LLM-сервер (как vLLM: тот же SSH/порт/хост).
-# Образ пушится в Docker Hub; на сервере: pull + run с томами:
-#   ~/models → /models (веса, та же идея что у vLLM)
-#   ~/…/llm-configs → /configs (каталог .env конфигов)
+# Деплой: (1) образ vLLM «Decaf» (llm-orchestrator/vllm-runner/Dockerfile.decarf) → learn-english:vllm-1.0.0
+#         (2) API оркестратора → llm-orchestrator-api. На сервере: pull обоих, run API.
+# Тома: ~/models → /models, ~/…/llm-configs → /configs
 name: Deploy Orchestrator Backend
 
 on:
@@ -38,6 +37,15 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
+    - name: Build and push vLLM runner image (Decaf)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./llm-orchestrator/vllm-runner
+        file: ./llm-orchestrator/vllm-runner/Dockerfile.decarf
+        push: true
+        platforms: linux/amd64
+        tags: deniskocs/learn-english:vllm-1.0.0
+
     - name: Build and push LLM Orchestrator API image
       uses: docker/build-push-action@v5
       with:
@@ -73,6 +81,8 @@ jobs:
         MODELS_HOST="${HOME}/${MODELS_REL}"
         CONFIGS_HOST="${HOME}/${CONFIGS_REL}"
         mkdir -p "${MODELS_HOST}" "${CONFIGS_HOST}"
+        echo "Pulling vLLM runner (Start / docker pull in orchestrator use this)..."
+        docker pull "deniskocs/learn-english:vllm-1.0.0"
         echo "Pulling ${IMAGE}..."
         docker pull "${IMAGE}"
         echo "Stopping old container..."
@@ -81,9 +91,15 @@ jobs:
         echo "  ${MODELS_HOST} -> /models"
         echo "  ${CONFIGS_HOST} -> /configs"
         docker run -d --name "${NAME}" --restart unless-stopped \
+          --add-host=host.docker.internal:host-gateway \
           -p 8765:8765 \
           -e MODELS_DIR=/models \
           -e CONFIGS_DIR=/configs \
+          -e VLLM_DOCKER=1 \
+          -e VLLM_LIVENESS_HOST=host.docker.internal \
+          -e "HOST_MODELS_PATH=$(realpath "${MODELS_HOST}")" \
+          -e "HOST_LLM_CONFIGS_PATH=$(realpath "${CONFIGS_HOST}")" \
+          -v /var/run/docker.sock:/var/run/docker.sock \
           -v "$(realpath "${MODELS_HOST}"):/models" \
           -v "$(realpath "${CONFIGS_HOST}"):/configs" \
           "${IMAGE}"

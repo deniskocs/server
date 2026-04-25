@@ -50,6 +50,10 @@ class AddConfigBody(BaseModel):
     text: str
 
 
+class UpdateConfigBody(BaseModel):
+    text: str
+
+
 @app.on_event("startup")
 def _orchestrator_seed_configs() -> None:
     from . import config_files
@@ -103,15 +107,37 @@ def get_file_text(config_id: str) -> FileTextResponse:
     return FileTextResponse(fileName=name, text=text)
 
 
+@app.put("/api/orchestrator/configs/{config_id}/file-text", response_model=TableResponse)
+def put_file_text(config_id: str, body: UpdateConfigBody) -> TableResponse:
+    try:
+        state.update_config_text(config_id, body.text)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Unknown config") from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    rows, count = state.build_table()
+    return TableResponse(rows=rows, count=count)
+
+
 @app.post("/api/orchestrator/configs/{config_id}/actions", response_model=TableResponse)
 async def post_action(config_id: str, body: ActionBody) -> TableResponse:
     a = body.action
     if a == ActionType.download:
         await state.action_download(config_id)
     elif a == ActionType.start:
-        await state.action_start(config_id)
+        try:
+            await state.action_start(config_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
     elif a == ActionType.stop:
-        await state.action_stop(config_id)
+        try:
+            await state.action_stop(config_id)
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
     elif a == ActionType.delete_model:
         await state.action_delete_model(config_id)
     elif a == ActionType.delete_config:

@@ -58,7 +58,7 @@ function iconViewConfig() {
 type Variant = "viewConfig" | "load" | "play" | "stop" | "trashModel" | "trashConfig";
 
 const hints: Record<Variant, { title: string; label: string }> = {
-  viewConfig: { title: "View config as text", label: "View config" },
+  viewConfig: { title: "Edit config (open editor, save to disk)", label: "Edit config" },
   load: { title: "Download model weights to disk", label: "Download" },
   play: { title: "Start model with this config", label: "Play" },
   stop: { title: "Stop running model", label: "Stop" },

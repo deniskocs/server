@@ -34,9 +34,9 @@
 
 В корне репо лежит [`.trunk/trunk.yaml`](../.trunk/trunk.yaml) — при желании можно гонять **[Trunk](https://trunk.io/)** локально: `trunk check llm-orchestrator` из корня. **В GitHub Actions Trunk больше не подключён.**
 
-## Конфигурация (связь с `vllm/llm-configs`)
+## Конфигурация (связь с vLLM `llm-configs`)
 
-- Эталон в репозитории: папка **[`vllm/llm-configs/`](../vllm/llm-configs/)** (путь **от корня проекта** — `vllm` → `llm-configs`). Там, например, шаблоны `.env` для vLLM. При обсуждении «llm-config» без уточнения в этом README речь про **эту** директорию.
+- Каноническая копия шаблонов **в образе vLLM** — **[`vllm-runner/llm-configs/`](vllm-runner/llm-configs/)** (сборка: `vllm-runner/Dockerfile.decarf`, см. [README в `vllm-runner`](vllm-runner/README.md)). В `vllm/llm-configs` в корне репо — **симлинк** туда же (удобно для старых путей).
 - Разбор YAML и примеры профилей, если понадобятся при реализации, можно согласовать с отдельным корневым каталогом [`llm-configs/`](../llm-configs/) в репо и с [`load_config.py`](../llm-configs/load_config.py) — внутри `vllm` своего `load_config` сейчас нет, это опора на соседний по смыслу код.
 - На сервере в **одной выделенной папке** (volume / bind mount) лежат **все файлы конфигов** рантайма; путь к монтированию зададим, когда появятся бинарь/образ. Оркестратор читает и изменяет только эту директорию.
 - При проектировании UI решим, что дублируем из репо, а что остаётся только в compose/deploy.
@@ -45,7 +45,7 @@
 
 ### Список записей (каждая строка)
 
-Таблица или список строк **по выбранному конфигу** (в духе [`vllm/llm-configs`](../vllm/llm-configs/)). В одной строке слева направо:
+Таблица или список строк **по выбранному конфигу** (формат `.env` как в `vllm-runner/llm-configs/`). В одной строке слева направо:
 
 | Зона | Содержимое |
 |------|------------|
@@ -114,6 +114,6 @@
 
 ## Следующие шаги (когда будете кодить)
 
-1. Согласовать формат с [`vllm/llm-configs`](../vllm/llm-configs/) и при необходимости с корневым [`llm-configs`](../llm-configs/) / [`load_config.py`](../llm-configs/load_config.py).
-2. **Workflow'ы** для веб-части: [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) (отдельный файл; по аналогии с [deploy vLLM](../.github/workflows/deploy-vllm.yaml) / [router](../.github/workflows/deploy-when-push-to-main.yaml)).
+1. Согласовать формат с [`vllm-runner/llm-configs/`](vllm-runner/llm-configs/) и при необходимости с корневым [`llm-configs`](../llm-configs/) / [`load_config.py`](../llm-configs/load_config.py).
+2. **Деплой** API: [deploy-orchestrator-backend](../.github/workflows/deploy-orchestrator-backend.yaml) (там же сборка+push образа vLLM Decaf и API). [deploy vLLM](../.github/workflows/deploy-vllm.yaml) — перезапуск контейнера на сервере. [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) / [router](../.github/workflows/deploy-when-push-to-main.yaml) — прочие.
 3. Поднять **фронт** (TS + сборка) и **HTTP-сервис** с отдачей `dist` и API.
