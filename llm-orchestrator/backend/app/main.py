@@ -78,17 +78,6 @@ def _config_must_exist(name: str) -> None:
         raise HTTPException(404, detail="Unknown config")
 
 
-@app.on_event("startup")
-def _orchestrator_seed_configs() -> None:
-    from . import config_files
-    from .seed_data import HARDCODED_CONFIGS
-    from .simulation import format_config_file_text
-
-    config_files.ensure_seeded_from_hardcoded(
-        HARDCODED_CONFIGS, format_config_file_text
-    )
-
-
 @app.get("/api/health")
 def health() -> dict[str, str]:
     out: dict[str, str] = {"status": "ok"}

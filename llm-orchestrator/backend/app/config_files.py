@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any, Callable
 
 _ENV_NAME_RE = re.compile(r"^[\w.-]+\.env$")
 
@@ -88,15 +87,3 @@ def display_name_for_file(file_name: str, text: str) -> str:
     if sm != "—":
         return sm
     return Path(file_name).stem or file_name
-
-
-def ensure_seeded_from_hardcoded(
-    docs: list[dict[str, Any]], format_text: Callable[[dict[str, Any]], str]
-) -> None:
-    """If CONFIGS_DIR has no `*.env` files, write seed from structured docs (dev/empty server)."""
-    ensure_dir()
-    p = get_configs_path()
-    if any(p.glob("*.env")):
-        return
-    for doc in docs:
-        (p / doc["fileName"]).write_text(format_text(doc), encoding="utf-8")

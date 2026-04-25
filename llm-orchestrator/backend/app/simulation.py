@@ -28,37 +28,7 @@ logger = logging.getLogger(__name__)
 ModelRuntimeState = Literal["not_on_disk", "downloading", "downloaded", "running"]
 
 
-def format_config_file_text(doc: dict[str, Any]) -> str:
-    v = doc["vllm"]
-    lines = [
-        f"# llm-orchestrator seed: {doc['fileName']}",
-        f"DEFAULT_MODEL_NAME={doc['defaultModelName']}",
-        f"SERVED_MODEL_NAME={doc['servedModelName']}",
-        "",
-        "# Сервер (deploy-vllm + docker-entrypoint.sh; PORT обязателен для Start в оркестраторе)",
-        "PORT=8000",
-        "HOST=0.0.0.0",
-        "",
-        "# Параметры vLLM",
-        f"VLLM_QUANTIZATION={v.get('quantization') or ''}",
-        f"VLLM_MAX_MODEL_LEN={v['maxModelLen']}",
-        f"VLLM_DTYPE={v.get('dtype') or ''}",
-        f"VLLM_GPU_MEMORY_UTILIZATION={v['gpuMemoryUtilization']}",
-    ]
-    if "tensorParallelSize" in v:
-        lines.append(f"VLLM_TENSOR_PARALLEL_SIZE={v.get('tensorParallelSize') or ''}")
-    if v.get("reasoningParser"):
-        lines.append(f"VLLM_REASONING_PARSER={v['reasoningParser']}")
-    lines.append(f"VLLM_ENABLE_AUTO_TOOL_CHOICE={v['enableAutoToolChoice']}")
-    lines.append(f"VLLM_TOOL_CALL_PARSER={v['toolCallParser']}")
-    return "\n".join(lines)
-
-
-def _default_initial_state(file_name: str) -> tuple[ModelRuntimeState, str | None]:
-    if file_name == "vllm.env":
-        return "not_on_disk", None
-    if file_name == "vllm-llama.env":
-        return "downloaded", None
+def _default_initial_state(_file_name: str) -> tuple[ModelRuntimeState, str | None]:
     return "downloaded", None
 
 

@@ -2,7 +2,7 @@
 
 Сервис и Docker-образ для управления LLM на сервере: конфигурация моделей, загрузка/удаление, запуск/остановка, небольшой веб-интерфейс.
 
-Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript) → HTTP к API. В [`backend/`](backend/) — **FastAPI** (сиды из бывшего `hardcoded`, рантайм vLLM через Docker, логи по шагам). **Docker-образ** веба (nginx + `dist/`) + **ручной deploy** Mac: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**пока только фронт**; проксирование `/api` на бэкенд в проде — отдельно).
+Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript) → HTTP к API. В [`backend/`](backend/) — **FastAPI** (конфиги `*.env` в `CONFIGS_DIR`, vLLM через Docker, логи по шагам). **Docker-образ** веба (nginx + `dist/`) + **ручной deploy** Mac: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**пока только фронт**; проксирование `/api` на бэкенд в проде — отдельно).
 
 ## Что планируется в этой папке
 
@@ -24,7 +24,7 @@
 | Каталог | Контейнер | Содержимое |
 |---------|-----------|------------|
 | [`web/`](web/) | Nginx + статика | Всё, что касается **фронта** и **раздачи** собранного UI (`dist/`, конфиг Nginx, при появлении — `package.json`, Vite, Dockerfile образа `web`). |
-| [`backend/`](backend/) | Сервис оркестратора | **FastAPI**: сиды, Docker, модели/конфиги; **деплой на LLM-сервер** (тома `~/models`, `~/llm-orchestrator-configs`) — [`.github/workflows/deploy-orchestrator-backend.yaml`](../.github/workflows/deploy-orchestrator-backend.yaml) (см. [`backend/README`](backend/README.md)). |
+| [`backend/`](backend/) | Сервис оркестратора | **FastAPI**: каталог конфигов, Docker, модели; **деплой на LLM-сервер** (тома `~/models`, `~/llm-orchestrator-configs`) — [`.github/workflows/deploy-orchestrator-backend.yaml`](../.github/workflows/deploy-orchestrator-backend.yaml) (см. [`backend/README`](backend/README.md)). |
 
 Корневой [`README.md`](README.md) в `llm-orchestrator` — общая **спека**; деталь по папкам — в `web/README` и `backend/README`. Это **заготовка** под два Docker-образа и `compose`, без дублирования «Learn English» в именах: артефакты оркестратора лежат здесь, по сети `llm_orchestrator` (см. выше).
 
@@ -36,7 +36,7 @@
 
 ## Конфигурация (`.env` в оркестраторе → в vLLM как `-e`)
 
-- Образ **[vLLM runner (Decaf)](vllm-runner/)** не читает файлы: только **env** (см. [docker-entrypoint](vllm-runner/docker-entrypoint.sh)). **Оркестратор** хранит профили в `CONFIGS_DIR` (сиды: [`backend/app/seed_data.py`](backend/app/seed_data.py)) и при **Start** передаёт строки `*.env` в `docker run` как **`-e`**, плюс `-v` весов.
+- Образ **[vLLM runner (Decaf)](vllm-runner/)** не читает файлы: только **env** (см. [docker-entrypoint](vllm-runner/docker-entrypoint.sh)). **Оркестратор** хранит профили в `CONFIGS_DIR` (файлы `*.env` создаёшь сам / через UI) и при **Start** передаёт строки `*.env` в `docker run` как **`-e`**, плюс `-v` весов.
 - Разбор YAML и прочие профили при необходимости — в корневом [`llm-configs/`](../llm-configs/) и [`load_config.py`](../llm-configs/load_config.py).
 - На сервере в **одной выделенной папке** (volume / bind mount) лежат **все файлы конфигов** рантайма; путь к монтированию зададим, когда появятся бинарь/образ. Оркестратор читает и изменяет только эту директорию.
 - При проектировании UI решим, что дублируем из репо, а что остаётся только в compose/deploy.
