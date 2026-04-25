@@ -11,16 +11,18 @@
 
 ## Сборка и публикация образа
 
-### Текущий способ: скрипт `deploy.sh`
+### Основной способ: GitHub Actions
 
-Сборка и пуш в Docker Hub делаются скриптом в этой папке (из корня репозитория `server` удобно так):
+Workflow **[Build and push base image](../.github/workflows/build-base-image.yaml)** (в списке Actions то же имя):
 
-```bash
-cd base
-./deploy.sh
-```
+- **workflow_dispatch** — ручной **Run workflow**
+- **push** в `main`, если менялись **`base/**`** или сам workflow
 
-Скрипт читает общую конфигурацию (`../scripts/config.sh`), токен Docker Hub берёт через `../scripts/get-bitwarden-password.sh` и `../scripts/login-docker.sh`. Тег образа: `deniskocs/core:server-base-0.1.0`.
+Секреты: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_ACCESS_TOKEN`. Тег: **`deniskocs/core:server-base-0.1.0`**, платформа **linux/amd64**.
+
+### Локально: скрипт `deploy.sh` (Bitwarden + Docker Hub)
+
+Альтернатива без CI: из корня `server` — `cd base && ./deploy.sh`. Использует `../scripts/config.sh`, токен через `get-bitwarden-password.sh`, логин `login-docker.sh`.
 
 ### Только локальная сборка (без публикации)
 
@@ -28,10 +30,6 @@ cd base
 cd base
 docker build --platform linux/amd64 -t deniskocs/core:server-base-0.1.0 .
 ```
-
-### GitHub Actions (TODO)
-
-Отдельного workflow для сборки и пуша `base` в этом репозитории **пока нет**. Когда появится (например, с именем вроде «Build and Push Base Image»), инструкцию можно будет дополнить путём к `.github/workflows/...` и шагом ручного запуска.
 
 ## Использование базового образа
 

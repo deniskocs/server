@@ -2,6 +2,8 @@
 
 set -e
 
+# Локальная публикация base-образа (CI: .github/workflows/build-base-image.yaml).
+
 # Загрузка общей конфигурации
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
