@@ -2,7 +2,7 @@
 
 Сервис и Docker-образ для управления LLM на сервере: конфигурация моделей, загрузка/удаление, запуск/остановка, небольшой веб-интерфейс.
 
-Статус: **черновик требований** — основная спецификация здесь; **качество кода** для этой папки завязано на [Trunk](#trunk-lint-ci) (конфиг в корне репозитория, CI на push/PR). В [`web/`](web/) — UI (Vite + TypeScript), **Docker-образ** (nginx + `dist/`), **ручной deploy на Mac**: отдельный workflow [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**Deploy Orchestrator**). **Бэкенд** **ещё** не реализован.
+Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript), **Docker-образ** (nginx + `dist/`), **ручной deploy на Mac**: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**Deploy Orchestrator**). **Бэкенд** **ещё** не реализован.
 
 ## Что планируется в этой папке
 
@@ -28,15 +28,11 @@
 
 Корневой [`README.md`](README.md) в `llm-orchestrator` — общая **спека**; деталь по папкам — в `web/README` и `backend/README`. Это **заготовка** под два Docker-образа и `compose`, без дублирования «Learn English» в именах: артефакты оркестратора лежат здесь, по сети `llm_orchestrator` (см. выше).
 
-Полная реализация **бэкенда** и **deploy-скриптов** в этом README **не** описывается как готовая — только **намерения**. **Исключения:** старт **web**-части (см. [`web/README`](web/README.md)), линтинг Trunk + workflow в GitHub Actions (см. ниже).
+Полная реализация **бэкенда** и **deploy-скриптов** в этом README **не** описывается как готовая — только **намерения**. **Исключения:** старт **web**-части (см. [`web/README`](web/README.md)).
 
-### Trunk (lint, CI)
+### Trunk (опционально, только локально)
 
-- Используем **[Trunk](https://trunk.io/)** (Code Quality): единая точка линтинга/формата, те же инструменты локально и в CI.
-- **Конфиг Trunk** лежит в **корне репозитория** в [`.trunk/trunk.yaml`](../.trunk/trunk.yaml) — так устроен Trunk; сам **области проверок** сузим к каталогу **`llm-orchestrator/`** (через `ignore` в конфиге и передачу пути), чтобы не гонять линтеры по всему `server` без надобности.
-- **Локально** (после установки: `curl https://get.trunk.io -fsSL | bash`): из корня репозитория удобно вызывать `trunk check llm-orchestrator` (и при необходимости `trunk fmt`), чтобы не пушить заведомо «красный» `README`/разметку.
-- **Pre-commit** в git **не** обязателен; **гейт на push/PR** — **GitHub Actions** · [`.github/workflows/trunk-llm-orchestrator.yaml`](../.github/workflows/trunk-llm-orchestrator.yaml) · события `push` и `pull_request` по путям `llm-orchestrator/**` и `.trunk/**` · официальный `trunk-io/trunk-action` с `arguments: llm-orchestrator`, чтобы в CI тоже проверялся **тот же** подкаталог.
-- По мере появления в `llm-orchestrator` **TypeScript/CSS** в соответствующем разделе [`.trunk/trunk.yaml`](../.trunk/trunk.yaml) **допишем** (например `eslint`/`prettier` через `trunk check enable` / ручная правка), с сохранением **фокуса** на `llm-orchestrator/`.
+В корне репо лежит [`.trunk/trunk.yaml`](../.trunk/trunk.yaml) — при желании можно гонять **[Trunk](https://trunk.io/)** локально: `trunk check llm-orchestrator` из корня. **В GitHub Actions Trunk больше не подключён.**
 
 ## Конфигурация (связь с `vllm/llm-configs`)
 
