@@ -1,4 +1,8 @@
 # API image for LLM server (see .github/workflows/deploy-orchestrator-backend.yaml)
+# Official static CLI (multi-arch). apt install docker.io on slim often leaves no `docker`
+# in PATH in CI/buildx → shell exit 127 on `docker --version`.
+FROM docker:28-cli AS dockerclient
+
 FROM python:3.12-slim
 WORKDIR /app
 
@@ -6,9 +10,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 # Docker *client* only — runtime mounts /var/run/docker.sock; engine stays on the host.
-RUN apt-get update && apt-get install -y --no-install-recommends docker.io \
-    && rm -rf /var/lib/apt/lists/* \
-    && docker --version
+COPY --from=dockerclient /usr/local/bin/docker /usr/bin/docker
+RUN docker --version
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

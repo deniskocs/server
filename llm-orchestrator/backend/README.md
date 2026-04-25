@@ -52,4 +52,4 @@ docker build -t llm-orchestrator-api:local -f Dockerfile .
 | `~/models` | `/models` | веса (как `~/models` у vLLM) |
 | `~/llm-orchestrator-configs` | `/configs` | каталог `.env` конфигов (создаётся при деплое) |
 
-Пути можно переопределить **inputs** в workflow. В контейнере API: **Docker socket**, **`HOST_MODELS_PATH`**, **`HOST_LLM_CONFIGS_PATH`**, **клиент** `docker` (по умолчанию **`/usr/bin/docker`**, `DOCKER_PATH`), **имя** контейнера vLLM — **`vllm-orchestrated`**. Без полного набора `Start`/`stop` не смогут управлять vLLM (см. логи). `/api/health` возвращает `MODELS_DIR` / `CONFIGS_DIR`, если заданы.
+Пути можно переопределить **inputs** в workflow. В контейнере API: **Docker socket**, **`HOST_MODELS_PATH`**, **`HOST_LLM_CONFIGS_PATH`**, **клиент** `docker` (в образе — бинарь из официального `docker:*-cli`, по умолчанию **`/usr/bin/docker`**, `DOCKER_PATH`), **имя** контейнера vLLM — **`vllm-orchestrated`**. Без полного набора `Start`/`stop` не смогут управлять vLLM (см. логи). `/api/health` возвращает `MODELS_DIR` / `CONFIGS_DIR`, если заданы.

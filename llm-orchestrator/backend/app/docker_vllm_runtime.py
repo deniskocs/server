@@ -12,7 +12,7 @@ from .vllm_env import DEFAULT_GATED_API_KEY, VLLM_CONTAINER, VLLM_IMAGE
 
 logger = logging.getLogger(__name__)
 
-# Клиент Docker внутри API-контейнера: по умолчанию типичный путь debian; переопределение: DOCKER_PATH
+# Клиент Docker внутри API-контейнера: по умолчанию /usr/bin/docker (COPY из docker:*-cli); DOCKER_PATH
 _DEFAULT_DOCKER = "/usr/bin/docker"
 
 
