@@ -5,7 +5,8 @@ export default defineConfig({
   appType: "spa",
   build: {
     outDir: "dist",
-    sourcemap: true,
+    /** Prod image serves minified assets only; no public source maps. */
+    sourcemap: false,
   },
   server: {
     port: 5173,
