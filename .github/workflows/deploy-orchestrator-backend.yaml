@@ -82,6 +82,7 @@ jobs:
         echo "  ${MODELS_HOST} -> /models"
         echo "  ${CONFIGS_HOST} -> /configs"
         docker run -d --name "${NAME}" --restart unless-stopped \
+          --gpus all \
           --add-host=host.docker.internal:host-gateway \
           -p 8765:8765 \
           -e MODELS_DIR=/models \

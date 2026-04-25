@@ -52,6 +52,8 @@ export interface HostStatsGpu {
   memoryUsedMib: number;
   memoryFreeMib: number;
   utilizationPercent: number | null;
+  /** Watts from nvidia-smi power.draw, if available */
+  powerDrawW?: number | null;
 }
 
 export interface HostStatsModelsFilesystem {

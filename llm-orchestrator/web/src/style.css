@@ -93,11 +93,35 @@ body {
   gap: 0.28rem;
 }
 
+.host-stats__gpu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .host-stats__row {
   display: grid;
-  grid-template-columns: 7.5rem minmax(0, 1fr);
-  gap: 0.4rem 0.6rem;
+  /* ~80% wider label column than previous 7.5rem — room for long titles + hints */
+  grid-template-columns: minmax(13.5rem, 44%) minmax(0, 1fr);
+  gap: 0.4rem 0.75rem;
   align-items: start;
+}
+
+.host-stats__label-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.host-stats__label-hint {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-weight: 400;
 }
 
 @media (max-width: 520px) {
@@ -112,7 +136,8 @@ body {
 .host-stats__label {
   color: var(--muted);
   font-size: 0.78rem;
-  white-space: nowrap;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
 .host-stats__value {
@@ -190,6 +215,8 @@ body {
 
 .col-actions {
   min-width: 10.5rem;
+  text-align: left;
+  vertical-align: top;
 }
 
 .col-status {
@@ -251,7 +278,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.2rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 /* Icon-only action buttons: compact hit area around 12px glyph */

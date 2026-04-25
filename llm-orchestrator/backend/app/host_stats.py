@@ -14,29 +14,49 @@ import psutil
 logger = logging.getLogger(__name__)
 
 
+def _parse_gpu_util(s: str) -> int | None:
+    s = s.strip().rstrip(" %")
+    if not s or s.upper() in ("N/A", "[N/A]"):
+        return None
+    try:
+        return int(float(s))
+    except ValueError:
+        return None
+
+
+def _parse_power_w(s: str) -> float | None:
+    s = s.strip()
+    if not s or s.upper() in ("N/A", "[N/A]"):
+        return None
+    for suffix in (" W", "W"):
+        if s.endswith(suffix) and s.upper() != "N/A":
+            s = s[: -len(suffix)].strip()
+            break
+    try:
+        return round(float(s), 1)
+    except ValueError:
+        return None
+
+
 def _parse_nvidia_smi_line(line: str) -> dict[str, Any] | None:
     """
-    Parse one CSV line from
-    nvidia-smi --query-gpu=index,name,memory.total,...
-    Commas inside GPU name are rare but possible (join middle fields).
+    Parse one CSV line from nvidia-smi with fields (order matters):
+    index, name, memory.total, memory.used, memory.free, utilization.gpu, power.draw
+    Commas inside GPU name: join fields between index and the five tail metrics.
     """
     parts = [p.strip() for p in line.split(",")]
-    if len(parts) < 6:
+    if len(parts) < 7:
         return None
     try:
         index = int(parts[0])
-        util_s = parts[-1].rstrip(" %")
-        mem_free = int(float(parts[-2]))
-        mem_used = int(float(parts[-3]))
-        mem_total = int(float(parts[-4]))
+        power_w = _parse_power_w(parts[-1])
+        util = _parse_gpu_util(parts[-2])
+        mem_free = int(float(parts[-3]))
+        mem_used = int(float(parts[-4]))
+        mem_total = int(float(parts[-5]))
     except (ValueError, IndexError):
         return None
-    name = ",".join(parts[1:-4]) if len(parts) > 6 else parts[1]
-    util: int | None
-    try:
-        util = int(float(util_s))
-    except ValueError:
-        util = None
+    name = ",".join(parts[1:-5]) if len(parts) > 7 else parts[1]
     return {
         "index": index,
         "name": name,
@@ -44,6 +64,7 @@ def _parse_nvidia_smi_line(line: str) -> dict[str, Any] | None:
         "memoryUsedMib": mem_used,
         "memoryFreeMib": mem_free,
         "utilizationPercent": util,
+        "powerDrawW": power_w,
     }
 
 
@@ -54,7 +75,7 @@ def _query_gpus() -> list[dict[str, Any]]:
         p = subprocess.run(
             [
                 "nvidia-smi",
-                "--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu",
+                "--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,power.draw",
                 "--format=csv,noheader,nounits",
             ],
             capture_output=True,

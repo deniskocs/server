@@ -39,12 +39,28 @@ function formatBytes(n: number): string {
   return `${d} ${units[u]}`;
 }
 
-function hostStatsRow(label: string, value: string): HTMLElement {
+function hostStatsRow(
+  label: string,
+  value: string,
+  labelHint?: string
+): HTMLElement {
   const row = el("div", { className: "host-stats__row" });
-  row.append(
-    el("span", { className: "host-stats__label", text: label }),
-    el("span", { className: "host-stats__value", text: value })
-  );
+  if (labelHint) {
+    const col = el("div", { className: "host-stats__label-col" });
+    col.append(
+      el("span", { className: "host-stats__label", text: label }),
+      el("div", { className: "host-stats__label-hint", text: labelHint })
+    );
+    row.append(
+      col,
+      el("span", { className: "host-stats__value", text: value })
+    );
+  } else {
+    row.append(
+      el("span", { className: "host-stats__label", text: label }),
+      el("span", { className: "host-stats__value", text: value })
+    );
+  }
   return row;
 }
 
@@ -61,35 +77,40 @@ function renderHostStats(s: HostStats): HTMLElement {
     )
   );
   if (s.gpus.length) {
-    for (const g of s.gpus) {
-      const util =
-        g.utilizationPercent != null
-          ? ` · GPU load ${g.utilizationPercent}%`
-          : "";
-      const title = s.gpus.length > 1 ? `GPU ${g.index}` : "GPU";
-      grid.append(
+    s.gpus.forEach((g) => {
+      const base = `GPU ${g.index}`;
+      const load =
+        g.utilizationPercent != null ? `${g.utilizationPercent}%` : "n/a";
+      const pwr = g.powerDrawW != null ? `${g.powerDrawW} W` : "n/a";
+      const wrap = el("div", { className: "host-stats__gpu" });
+      wrap.append(
+        hostStatsRow(base, g.name),
+        hostStatsRow(`${base} — load`, load),
+        hostStatsRow(`${base} — power draw`, pwr),
         hostStatsRow(
-          title,
-          `${g.name} — ${g.memoryUsedMib} / ${g.memoryTotalMib} MiB used (${g.memoryFreeMib} MiB free)${util}`
+          `${base} — VRAM`,
+          `${g.memoryUsedMib} / ${g.memoryTotalMib} MiB used, ${g.memoryFreeMib} MiB free`
         )
       );
-    }
+      grid.append(wrap);
+    });
   } else {
     grid.append(
-      hostStatsRow("GPU", "not detected (no nvidia-smi in API container/host)")
+      hostStatsRow(
+        "GPU",
+        "not detected: install nvidia-smi in the API image and run the container with GPU access (e.g. --gpus all)"
+      )
     );
   }
   if (s.models) {
     const m = s.models;
     const fs = m.filesystem;
     grid.append(
-      hostStatsRow("MODELS_DIR", m.path),
-      hostStatsRow("Weights folder", formatBytes(m.dirSizeBytes)),
+      hostStatsRow("MODELS_DIR path", m.path),
       hostStatsRow(
-        "Disk (volume with MODELS_DIR)",
-        `${formatBytes(fs.usedBytes)} / ${formatBytes(
-          fs.totalBytes
-        )} used — ${formatBytes(fs.freeBytes)} free on volume`
+        "Size of MODELS_DIR (folder)",
+        `${formatBytes(m.dirSizeBytes)} / ${formatBytes(fs.freeBytes)} (free)`,
+        "Left: all files in this tree (weights, cache). After slash: free space on the same disk volume. The (free) tag marks the free value after the slash."
       )
     );
   } else {
