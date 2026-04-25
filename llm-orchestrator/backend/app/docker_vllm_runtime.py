@@ -10,9 +10,9 @@ from pathlib import Path
 
 from .vllm_env import (
     DEFAULT_GATED_API_KEY,
-    VLLM_CONTAINER,
     VLLM_IMAGE,
     parse_env_key_values,
+    vllm_container_name,
 )
 
 logger = logging.getLogger(__name__)
@@ -110,8 +110,8 @@ def run_vllm_container(
     host_listen: str,
 ) -> str:
     """
-    Pull image, remove old orchestrator vLLM container (see VLLM_CONTAINER in
-    vllm_env), docker run with the same mounts as deploy-vllm.
+    Pull image, remove this profile's vLLM container if present, docker run
+    (name from ``vllm_container_name``), same mounts as deploy-vllm.
     """
     from . import config_files
 
@@ -127,6 +127,7 @@ def run_vllm_container(
             f"Config not found in CONFIGS_DIR: {env_name}."
         ) from e
     env_map = parse_env_key_values(text)
+    container = vllm_container_name(config_stem, env_map)
     # vLLM entrypoint reads only env, not /llm-configs; skip legacy
     env_map.pop("CONFIG_NAME", None)
     api_key = (env_map.pop("API_KEY", None) or "").strip() or DEFAULT_GATED_API_KEY
@@ -138,14 +139,14 @@ def run_vllm_container(
     dc = _docker_cmd()
     logger.info(
         "vLLM run: removing any existing %s, pull %s, CONFIG_STEM=%r PORT=%s",
-        VLLM_CONTAINER,
+        container,
         VLLM_IMAGE,
         config_stem,
         port,
     )
-    # Remove previous instance managed by the orchestrator (name != deploy-vllm vllm-server)
+    # Remove only this profile's container; other vllm-orchestrated--* keep running
     subprocess.run(
-        [dc, "rm", "-f", VLLM_CONTAINER],
+        [dc, "rm", "-f", container],
         capture_output=True,
         text=True,
     )
@@ -168,7 +169,7 @@ def run_vllm_container(
         "-d",
         "-ti",
         "--name",
-        VLLM_CONTAINER,
+        container,
         "--restart",
         "unless-stopped",
         "--gpus",
@@ -200,25 +201,36 @@ def run_vllm_container(
         raise RuntimeError(f"docker run failed: {err}")
 
     cid = (rr.stdout or "").strip()[:12] or "?"
-    logger.info("vLLM run: started container %s id=%s", VLLM_CONTAINER, cid)
+    logger.info("vLLM run: started container %s id=%s", container, cid)
     return (
-        f"vLLM up: {VLLM_IMAGE} as {VLLM_CONTAINER} → {hl}:{port}, CONFIG_NAME={config_stem} ({cid})"
+        f"vLLM up: {VLLM_IMAGE} as {container} → {hl}:{port}, CONFIG_NAME={config_stem} ({cid})"
     )
 
 
-def stop_vllm_container() -> str:
+def stop_vllm_container(config_id: str) -> str:
+    from . import config_files
+
+    try:
+        text = config_files.read_env_text(config_id)
+    except (OSError, ValueError) as e:
+        raise FileNotFoundError(
+            f"Config not found: {config_id}"
+        ) from e
+    stem = Path(config_id).stem
+    env_map = parse_env_key_values(text)
+    container = vllm_container_name(stem, env_map)
     dc = _docker_cmd()
-    logger.info("vLLM stop: docker stop %s (cli=%s)", VLLM_CONTAINER, dc)
+    logger.info("vLLM stop: docker stop %s (cli=%s)", container, dc)
     st = subprocess.run(
-        [dc, "stop", VLLM_CONTAINER],
+        [dc, "stop", container],
         capture_output=True,
         text=True,
     )
     if st.returncode != 0:
         err = (st.stderr or st.stdout or "").strip()
         if "No such container" in err or "is not running" in err:
-            return "vLLM container not running (already stopped)"
+            return f"vLLM container not running (already stopped): {container}"
         raise RuntimeError(
             f"docker stop failed: {(st.stderr or st.stdout)[:2000]}"
         )
-    return f"Stopped {VLLM_CONTAINER}"
+    return f"Stopped {container}"

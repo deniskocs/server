@@ -327,7 +327,7 @@ class Orchestrator:
             self._pending.add(config_id)
         try:
             require_vllm_docker()
-            stop_msg = await asyncio.to_thread(stop_vllm_container)
+            stop_msg = await asyncio.to_thread(stop_vllm_container, config_id)
             logger.info("action_stop: %s", stop_msg)
             async with self._lock:
                 self._set_runtime(config_id, "downloaded", stop_msg)
