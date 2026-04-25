@@ -115,5 +115,5 @@
 ## Следующие шаги (когда будете кодить)
 
 1. Согласовать формат с [`vllm-runner/llm-configs/`](vllm-runner/llm-configs/) и при необходимости с корневым [`llm-configs`](../llm-configs/) / [`load_config.py`](../llm-configs/load_config.py).
-2. **Деплой** API: [deploy-orchestrator-backend](../.github/workflows/deploy-orchestrator-backend.yaml) (там же сборка+push образа vLLM Decaf и API). [deploy vLLM](../.github/workflows/deploy-vllm.yaml) — перезапуск контейнера на сервере. [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) / [router](../.github/workflows/deploy-when-push-to-main.yaml) — прочие.
+2. **Деплой** API: [deploy-orchestrator-backend](../.github/workflows/deploy-orchestrator-backend.yaml). **Образ vLLM (Decaf):** [build-vllm-runner](../.github/workflows/build-vllm-runner.yaml) или `vllm/deploy.sh`. [deploy vLLM](../.github/workflows/deploy-vllm.yaml) — перезапуск `vllm-server` на сервере. [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) / [router](../.github/workflows/deploy-when-push-to-main.yaml) — прочие.
 3. Поднять **фронт** (TS + сборка) и **HTTP-сервис** с отдачей `dist` и API.

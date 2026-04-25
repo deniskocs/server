@@ -12,9 +12,24 @@ from .vllm_env import DEFAULT_GATED_API_KEY, VLLM_CONTAINER, VLLM_IMAGE
 
 logger = logging.getLogger(__name__)
 
+# Клиент Docker внутри API-контейнера: по умолчанию типичный путь debian; переопределение: DOCKER_PATH
+_DEFAULT_DOCKER = "/usr/bin/docker"
+
+
+def docker_cli_path() -> str:
+    return (os.environ.get("DOCKER_PATH") or _DEFAULT_DOCKER).strip() or _DEFAULT_DOCKER
+
+
+def _docker_resolved() -> str | None:
+    p = Path(docker_cli_path())
+    if p.is_file() and os.access(p, os.X_OK):
+        return str(p)
+    w = shutil_which("docker")
+    return w
+
 
 def can_run_vllm_docker() -> bool:
-    """True when host paths for -v and docker binary are available."""
+    """True when host paths for -v and a usable docker client are available."""
     if (os.environ.get("VLLM_DOCKER", "1").strip() or "1") not in (
         "1",
         "true",
@@ -26,7 +41,7 @@ def can_run_vllm_docker() -> bool:
     c = (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip()
     if not m or not c:
         return False
-    if not shutil_which("docker"):
+    if _docker_resolved() is None:
         return False
     return True
 
@@ -35,6 +50,13 @@ def shutil_which(cmd: str) -> str | None:
     from shutil import which
 
     return which(cmd)
+
+
+def _docker_cmd() -> str:
+    r = _docker_resolved()
+    if r is None:
+        return docker_cli_path()
+    return r
 
 
 def _resolve_existing_dir(p: str) -> Path:
@@ -50,8 +72,8 @@ def run_vllm_container(
     host_listen: str,
 ) -> str:
     """
-    Like deploy-vllm: pull image, remove old vllm-server, docker run with the same
-    mounts pattern (models + llm-configs at /llm-configs in image).
+    Pull image, remove old orchestrator vLLM container (see VLLM_CONTAINER in
+    vllm_env), docker run with the same mounts as deploy-vllm.
     """
     m_root = (os.environ.get("HOST_MODELS_PATH") or "").strip()
     c_root = (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip()
@@ -67,16 +89,17 @@ def run_vllm_container(
 
     hl = (host_listen or "0.0.0.0").strip() or "0.0.0.0"
 
-    # Remove previous (same as deploy-vllm)
+    dc = _docker_cmd()
+    # Remove previous instance managed by the orchestrator (name != deploy-vllm vllm-server)
     subprocess.run(
-        ["docker", "rm", "-f", VLLM_CONTAINER],
+        [dc, "rm", "-f", VLLM_CONTAINER],
         capture_output=True,
         text=True,
     )
 
     logger.info("docker pull %s", VLLM_IMAGE)
     pr = subprocess.run(
-        ["docker", "pull", VLLM_IMAGE],
+        [dc, "pull", VLLM_IMAGE],
         check=False,
         capture_output=True,
         text=True,
@@ -87,7 +110,7 @@ def run_vllm_container(
         )
 
     run_cmd = [
-        "docker",
+        dc,
         "run",
         "-d",
         "-ti",
@@ -127,7 +150,7 @@ def run_vllm_container(
 
 def stop_vllm_container() -> str:
     st = subprocess.run(
-        ["docker", "stop", VLLM_CONTAINER],
+        [_docker_cmd(), "stop", VLLM_CONTAINER],
         capture_output=True,
         text=True,
     )

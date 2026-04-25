@@ -1,6 +1,6 @@
-# Деплой: (1) образ vLLM «Decaf» (llm-orchestrator/vllm-runner/Dockerfile.decarf) → learn-english:vllm-1.0.0
-#         (2) API оркестратора → llm-orchestrator-api. На сервере: pull обоих, run API.
-# Тома: ~/models → /models, ~/…/llm-configs → /configs
+# Сборка и push только API оркестратора. Образ vLLM: workflow
+# .github/workflows/build-vllm-runner.yaml (или vllm/deploy.sh). На сервере:
+# docker pull vLLM (кэш) + pull API, run llm-orchestrator-api. Тома: ~/models, ~/…/llm-configs
 name: Deploy Orchestrator Backend
 
 on:
@@ -36,15 +36,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-    - name: Build and push vLLM runner image (Decaf)
-      uses: docker/build-push-action@v5
-      with:
-        context: ./llm-orchestrator/vllm-runner
-        file: ./llm-orchestrator/vllm-runner/Dockerfile.decarf
-        push: true
-        platforms: linux/amd64
-        tags: deniskocs/learn-english:vllm-1.0.0
 
     - name: Build and push LLM Orchestrator API image
       uses: docker/build-push-action@v5

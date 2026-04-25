@@ -1,0 +1,43 @@
+# Сборка и push образа vLLM «Decaf» (llm-orchestrator/vllm-runner/Dockerfile.decarf) →
+# deniskocs/learn-english:vllm-1.0.0. Тяжёлая job — запускается отдельно от API оркестратора.
+name: Build and push vLLM runner (Decaf)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "llm-orchestrator/vllm-runner/**"
+      - ".github/workflows/build-vllm-runner.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push vLLM runner image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./llm-orchestrator/vllm-runner
+          file: ./llm-orchestrator/vllm-runner/Dockerfile.decarf
+          push: true
+          platforms: linux/amd64
+          tags: deniskocs/learn-english:vllm-1.0.0
+
+      - name: Log out of Docker Hub
+        run: docker logout

@@ -12,6 +12,6 @@ cd llm-orchestrator/vllm-runner
 docker build -f Dockerfile.decarf -t deniskocs/learn-english:vllm-1.0.0 --platform linux/amd64 .
 ```
 
-CI: образ собирается и пушится **перед** LLM Orchestrator API в `.github/workflows/deploy-orchestrator-backend.yaml`.
+CI: [`.github/workflows/build-vllm-runner.yaml`](../../.github/workflows/build-vllm-runner.yaml) — ручной **Run workflow** или автоматом при **push** в `main`, если менялась эта папка. Локально: `vllm/deploy.sh` из корня репо или `docker build -f Dockerfile.decarf` здесь.
 
 Старый путь `vllm/Dockerfile` в корне репозитория удалён; исходники раннера живут здесь, под проектом оркестратора.

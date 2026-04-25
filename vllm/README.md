@@ -117,5 +117,5 @@ docker run -d -ti \
 
 ## Деплой через GitHub Actions
 
-- Образ **собирается и пушится** в `deploy-vllm` по смыслу заменён на шаг **«Build and push vLLM runner (Decaf)»** в workflow **`deploy-orchestrator-backend.yaml`** (перед сборкой API).
+- Образ vLLM **не** собирается в **`deploy-orchestrator-backend`**, только `llm-orchestrator-api`. Сборка раннера: GitHub **[`build-vllm-runner`](../.github/workflows/build-vllm-runner.yaml)** или **`./deploy.sh`** в `vllm/`.
 - **Только** перезапуск контейнера vLLM на сервере — по-прежнему [`.github/workflows/deploy-vllm.yaml`](../.github/workflows/deploy-vllm.yaml) (`config_name` и `docker pull` того же тега).

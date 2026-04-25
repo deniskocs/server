@@ -7,7 +7,9 @@ from pathlib import Path
 
 # Как .github/workflows/deploy-vllm.yaml
 VLLM_IMAGE = "deniskocs/learn-english:vllm-1.0.0"
-VLLM_CONTAINER = "vllm-server"
+# Ручной деплой (deploy-vllm.yaml) использует --name vllm-server. Оркестратор
+# поднимает отдельный контейнер, чтобы не пересекаться с тем же именем.
+VLLM_CONTAINER = "vllm-orchestrated"
 DEFAULT_GATED_API_KEY = "localkey"  # -e в workflow; entrypoint: --api-key
 
 logger = logging.getLogger(__name__)
