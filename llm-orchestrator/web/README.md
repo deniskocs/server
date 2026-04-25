@@ -31,7 +31,7 @@ npm run typecheck
 
 Сборка в образе: TypeScript + Vite (минификация, `sourcemap: false` в `vite.config.ts`, без публичных source maps) → каталог `dist/` → **nginx** слушает **80**, отдаёт файлы.
 
-Образ в CI собирает [`.github/workflows/deploy-when-push-to-main.yaml`](../../.github/workflows/deploy-when-push-to-main.yaml) (и smoke в [`llm-orchestrator-web-docker.yaml`](../../.github/workflows/llm-orchestrator-web-docker.yaml)). Локально, если нужно повторить:
+Образ в CI собирает и выкатывает ручной workflow [**Deploy Orchestrator**](../../.github/workflows/deploy-orchestrator.yaml). Локально, если нужно повторить:
 
 ```bash
 cd web && docker build -t llm-orchestrator-web:local -f Dockerfile .
@@ -40,14 +40,12 @@ docker run --rm -p 8080:80 llm-orchestrator-web:local
 
 → [http://127.0.0.1:8080](http://127.0.0.1:8080)
 
-**CI:** при изменениях в `llm-orchestrator/web/**` в GitHub Actions запускается [`.github/workflows/llm-orchestrator-web-docker.yaml`](../../.github/workflows/llm-orchestrator-web-docker.yaml): сборка образа и короткий smoke-тест HTTP.
+## Деплой на Mac
 
-## Деплой на Mac (как у router)
+Отдельный ручной workflow (не смешан с router): [`.github/workflows/deploy-orchestrator.yaml`](../../.github/workflows/deploy-orchestrator.yaml) · имя в Actions: **«Deploy Orchestrator»** · только **`workflow_dispatch`**.
 
-Один и тот же **ручной** workflow, что и для router: [`.github/workflows/deploy-when-push-to-main.yaml`](../../.github/workflows/deploy-when-push-to-main.yaml) · только **`workflow_dispatch`** (ни автопуш, ни `release:*` в npm).
+**Actions** → **Deploy Orchestrator** → **Run workflow** — `docker build` + `push` **`deniskocs/llm-orchestrator-web:0.0.1`**, по SSH: сеть `llm_orchestrator`, контейнер **`llm-orchestrator-web`**, **`8088:80`**.
 
-**Actions** → **«Deploy web application to Mac»** → **Run workflow** — соберёт **router** и **llm-orchestrator-web**, `docker push` в Docker Hub, по SSH на Mac: сеть `llm_orchestrator`, контейнер `llm-orchestrator-web`, **`8088:80`**, образ **`deniskocs/llm-orchestrator-web:0.0.1`**.
-
-Секреты: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_ACCESS_TOKEN`, `SSH_PRIVATE_KEY_DEPLOY_TO_MAC_SERVER_BASE64`, `MAC_HOST`, `MAC_USER`. Смена тега/порта — правка workflow (как `router:0.0.1`). Apple Silicon: **`linux/arm64`**; иначе поменяй `platforms` в обоих шагах `build-push`.
+Секреты: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_ACCESS_TOKEN`, `SSH_PRIVATE_KEY_DEPLOY_TO_MAC_SERVER_BASE64`, `MAC_HOST`, `MAC_USER`. Тег/порт — в yaml. **linux/arm64** (Apple Silicon); иначе смени `platforms` в `build-push`.
 
 См. общую спецификацию: [README в `llm-orchestrator`](../README.md).

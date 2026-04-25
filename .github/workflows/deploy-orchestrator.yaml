@@ -1,4 +1,4 @@
-name: Deploy web application to AWS EC2 instance
+name: Deploy Orchestrator
 
 on:
   workflow_dispatch:
@@ -20,13 +20,14 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - name: Build and push Docker image
+    - name: Build and push LLM Orchestrator web image
       uses: docker/build-push-action@v5
       with:
-        context: ./router
+        context: ./llm-orchestrator/web
+        file: ./llm-orchestrator/web/Dockerfile
         push: true
         platforms: linux/arm64
-        tags: deniskocs/router:0.0.1
+        tags: deniskocs/llm-orchestrator-web:0.0.1
 
     - name: Logout from Docker Hub
       run: docker logout
@@ -39,11 +40,11 @@ jobs:
         ssh-keyscan ${{ secrets.MAC_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         chmod 644 ~/.ssh/known_hosts
 
-    - name: Deploy Router on Mac Studio
+    - name: Deploy LLM Orchestrator web on Mac
       run: |
         ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
-        docker network create learn_english || true
-        docker rm router -f
-        docker rmi deniskocs/router:0.0.1
-        docker run -d -ti --name router -p 80:80 -p 443:443 -v /Users/home_mac_server/letsencrypt:/etc/letsencrypt --network learn_english --restart unless-stopped deniskocs/router:0.0.1
+        docker network create llm_orchestrator || true
+        docker rm llm-orchestrator-web -f
+        docker rmi deniskocs/llm-orchestrator-web:0.0.1
+        docker run -d -ti --name llm-orchestrator-web -p 8088:80 --network llm_orchestrator --restart unless-stopped deniskocs/llm-orchestrator-web:0.0.1
         EOF

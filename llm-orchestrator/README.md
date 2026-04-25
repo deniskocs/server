@@ -2,14 +2,14 @@
 
 Сервис и Docker-образ для управления LLM на сервере: конфигурация моделей, загрузка/удаление, запуск/остановка, небольшой веб-интерфейс.
 
-Статус: **черновик требований** — основная спецификация здесь; **качество кода** для этой папки завязано на [Trunk](#trunk-lint-ci) (конфиг в корне репозитория, CI на push/PR). В [`web/`](web/) — UI (Vite + TypeScript), **Docker-образ** (nginx + `dist/`), **ручной deploy на Mac** вместе с router: [`.github/workflows/deploy-when-push-to-main.yaml`](../.github/workflows/deploy-when-push-to-main.yaml) · линт-образ: [`llm-orchestrator-web-docker.yaml`](../.github/workflows/llm-orchestrator-web-docker.yaml). **Бэкенд** **ещё** не реализован.
+Статус: **черновик требований** — основная спецификация здесь; **качество кода** для этой папки завязано на [Trunk](#trunk-lint-ci) (конфиг в корне репозитория, CI на push/PR). В [`web/`](web/) — UI (Vite + TypeScript), **Docker-образ** (nginx + `dist/`), **ручной deploy на Mac**: отдельный workflow [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**Deploy Orchestrator**). **Бэкенд** **ещё** не реализован.
 
 ## Что планируется в этой папке
 
 | Артефакт | Назначение |
 |----------|------------|
 | **Docker-образ** | Упаковка оркестратора: веб-часть + логика работы с конфигом и жизненным циклом моделей. |
-| **Скрипт релиза / установка (web)** | Сборка и публикация образа + SSH на Mac — **тот же** ручной workflow, что и router: [`deploy-when-push-to-main.yaml`](../.github/workflows/deploy-when-push-to-main.yaml) (теги и порты — в yaml). |
+| **Скрипт релиза / установка (web)** | Сборка и публикация образа + SSH на Mac: [`deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (теги и порты — в yaml), отдельно от deploy router. |
 
 ## Архитектура деплоя
 
@@ -119,5 +119,5 @@
 ## Следующие шаги (когда будете кодить)
 
 1. Согласовать формат с [`vllm/llm-configs`](../vllm/llm-configs/) и при необходимости с корневым [`llm-configs`](../llm-configs/) / [`load_config.py`](../llm-configs/load_config.py).
-2. Добавить Dockerfile, скрипты `release` / `install` и **workflow'ы** в GitHub Actions (релиз образа, установка на сервер) по тем же принципам, что [deploy vLLM](../.github/workflows/deploy-vllm.yaml) и [deploy router](../.github/workflows/deploy-when-push-to-main.yaml).
+2. **Workflow'ы** для веб-части: [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) (отдельный файл; по аналогии с [deploy vLLM](../.github/workflows/deploy-vllm.yaml) / [router](../.github/workflows/deploy-when-push-to-main.yaml)).
 3. Поднять **фронт** (TS + сборка) и **HTTP-сервис** с отдачей `dist` и API.
