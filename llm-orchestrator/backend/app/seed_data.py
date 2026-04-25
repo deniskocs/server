@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-# Mirrors vllm/llm-configs/*.env snapshots
+# Seed configs for CONFIGS_DIR (format aligned with vLLM docker-entrypoint + deploy)
 HARDCODED_CONFIGS: list[dict[str, Any]] = [
     {
         "id": "cfg-vllm-env",

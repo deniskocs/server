@@ -1,6 +1,4 @@
-# «Decaf» — vLLM OpenAI server image (vLLM + bundled llm-configs + entrypoint).
-# Build: docker build -f Dockerfile.decarf -t <tag> .
-# Context must be this directory (llm-orchestrator/vllm-runner).
+# «Decaf» — vLLM OpenAI server image (vLLM + entrypoint; параметры только через -e, без /llm-configs).
 #
 # Base: PyTorch / CUDA (deniskocs/core:server-base-0.1.0).
 FROM deniskocs/core:server-base-0.1.0
@@ -12,7 +10,6 @@ RUN . /app/venv/bin/activate && \
     pip cache purge && \
     rm -rf ~/.cache/pip
 
-COPY llm-configs/ /llm-configs/
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

@@ -1,6 +1,6 @@
 # Сборка и push только API оркестратора. Образ vLLM: workflow
 # .github/workflows/build-vllm-runner.yaml (или vllm/deploy.sh). На сервере:
-# docker pull vLLM (кэш) + pull API, run llm-orchestrator-api. Тома: ~/models, ~/…/llm-configs
+# docker pull vLLM (кэш) + pull API, run llm-orchestrator-api. Тома: ~/models, ~/…/configs
 name: Deploy Orchestrator Backend
 
 on:
@@ -12,7 +12,7 @@ on:
         default: "models"
         type: string
       configs_dir:
-        description: "Папка с llm-configs (.env) на сервере (относительно $HOME)"
+        description: "Папка с .env конфигов оркестратора (относительно $HOME)"
         required: true
         default: "llm-orchestrator-configs"
         type: string
@@ -89,7 +89,6 @@ jobs:
           -e VLLM_DOCKER=1 \
           -e VLLM_LIVENESS_HOST=host.docker.internal \
           -e "HOST_MODELS_PATH=$(realpath "${MODELS_HOST}")" \
-          -e "HOST_LLM_CONFIGS_PATH=$(realpath "${CONFIGS_HOST}")" \
           -v /var/run/docker.sock:/var/run/docker.sock \
           -v "$(realpath "${MODELS_HOST}"):/models" \
           -v "$(realpath "${CONFIGS_HOST}"):/configs" \

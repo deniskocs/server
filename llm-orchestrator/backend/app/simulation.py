@@ -31,7 +31,7 @@ ModelRuntimeState = Literal["not_on_disk", "downloading", "downloaded", "running
 def format_config_file_text(doc: dict[str, Any]) -> str:
     v = doc["vllm"]
     lines = [
-        f"# llm-orchestrator/vllm-runner/llm-configs/{doc['fileName']}",
+        f"# llm-orchestrator seed: {doc['fileName']}",
         f"DEFAULT_MODEL_NAME={doc['defaultModelName']}",
         f"SERVED_MODEL_NAME={doc['servedModelName']}",
         "",

@@ -1,5 +1,5 @@
 /**
- * Mirrors `vllm/llm-configs/*.env` in the repo (DEFAULT_MODEL_NAME, VLLM_*), not root `llm-configs/*.yaml`.
+ * Parsed from `*.env` in orchestrator CONFIGS_DIR (DEFAULT_MODEL_NAME, VLLM_*; same shape as vLLM docker-entrypoint).
  */
 export interface VllmParams {
   quantization: string | null;
@@ -13,7 +13,7 @@ export interface VllmParams {
   reasoningParser?: string | null;
 }
 
-/** One deploy profile = one `.env` file under `vllm/llm-configs/`. */
+/** One deploy profile = one `*.env` in CONFIGS_DIR. */
 export interface EnvConfigDocument {
   id: string;
   fileName: string;
@@ -33,7 +33,7 @@ export interface ConfigRowViewModel {
   /** Stable id of the config document (`doc.id` from `.env` snapshot). */
   configId: string;
   index: number;
-  /** `vllm/llm-configs/*.env` file name. */
+  /** `*.env` file name in CONFIGS_DIR. */
   fileName: string;
   /** Served model name (SERVED_MODEL_NAME). */
   name: string;

@@ -8,7 +8,12 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from .vllm_env import DEFAULT_GATED_API_KEY, VLLM_CONTAINER, VLLM_IMAGE
+from .vllm_env import (
+    DEFAULT_GATED_API_KEY,
+    VLLM_CONTAINER,
+    VLLM_IMAGE,
+    parse_env_key_values,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +43,7 @@ def can_run_vllm_docker() -> bool:
     ):
         return False
     m = (os.environ.get("HOST_MODELS_PATH") or "").strip()
-    c = (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip()
-    if not m or not c:
+    if not m:
         return False
     if _docker_resolved() is None:
         return False
@@ -54,8 +58,6 @@ def vllm_docker_unavailable_message() -> str:
         issues.append(f"VLLM_DOCKER={vdo!r} (set 1 to enable)")
     if not (os.environ.get("HOST_MODELS_PATH") or "").strip():
         issues.append("HOST_MODELS_PATH is unset (host path for -v ...:/models)")
-    if not (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip():
-        issues.append("HOST_LLM_CONFIGS_PATH is unset (host path for -v ...:/llm-configs)")
     if _docker_resolved() is None:
         issues.append(
             f"docker client not found (try {docker_cli_path()}, install docker.io in API image, mount /var/run/docker.sock)"
@@ -97,7 +99,7 @@ def _host_bind_path(p: str) -> str:
     """
     String passed to `docker run -v host:cont`. The path is resolved by the **Docker daemon
     on the host** — we must not use Path.is_dir() from inside the API container, because
-    HOST_MODELS_PATH / HOST_LLM_CONFIGS_PATH are often *not* mounted there.
+    HOST_MODELS_PATH is often *not* mounted there.
     """
     return str(Path(p).expanduser())
 
@@ -114,20 +116,22 @@ def run_vllm_container(
     from . import config_files
 
     m_root = (os.environ.get("HOST_MODELS_PATH") or "").strip()
-    c_root = (os.environ.get("HOST_LLM_CONFIGS_PATH") or "").strip()
-    if not m_root or not c_root:
-        raise RuntimeError("HOST_MODELS_PATH and HOST_LLM_CONFIGS_PATH are required")
+    if not m_root:
+        raise RuntimeError("HOST_MODELS_PATH is required")
     mpath = _host_bind_path(m_root)
-    cpath = _host_bind_path(c_root)
-    # Same .env the UI edits (CONFIGS_DIR); host bind paths must point at this dir for vLLM
     env_name = f"{config_stem}.env"
     try:
-        config_files.read_env_text(env_name)
+        text = config_files.read_env_text(env_name)
     except FileNotFoundError as e:
         raise FileNotFoundError(
-            f"Config not found in CONFIGS_DIR: {env_name}. "
-            "On the Docker host, HOST_LLM_CONFIGS_PATH should be the same directory."
+            f"Config not found in CONFIGS_DIR: {env_name}."
         ) from e
+    env_map = parse_env_key_values(text)
+    # vLLM entrypoint reads only env, not /llm-configs; skip legacy
+    env_map.pop("CONFIG_NAME", None)
+    api_key = (env_map.pop("API_KEY", None) or "").strip() or DEFAULT_GATED_API_KEY
+    env_map.pop("PORT", None)
+    env_map.pop("HOST", None)
 
     hl = (host_listen or "0.0.0.0").strip() or "0.0.0.0"
 
@@ -158,7 +162,7 @@ def run_vllm_container(
             f"docker pull failed: {(pr.stderr or pr.stdout)[:2000]}"
         )
 
-    run_cmd = [
+    run_cmd: list[str] = [
         dc,
         "run",
         "-d",
@@ -173,18 +177,22 @@ def run_vllm_container(
         f"{port}:{port}",
         "-v",
         f"{mpath}:/models",
-        "-v",
-        f"{cpath}:/llm-configs",
-        "-e",
-        f"API_KEY={DEFAULT_GATED_API_KEY}",
-        "-e",
-        f"CONFIG_NAME={config_stem}",
-        "-e",
-        f"PORT={port}",
-        "-e",
-        f"HOST={hl}",
-        VLLM_IMAGE,
     ]
+    for k, v in env_map.items():
+        if not k:
+            continue
+        run_cmd.extend(["-e", f"{k}={v}"])
+    run_cmd.extend(
+        [
+            "-e",
+            f"PORT={port}",
+            "-e",
+            f"HOST={hl}",
+            "-e",
+            f"API_KEY={api_key}",
+            VLLM_IMAGE,
+        ]
+    )
     logger.info("docker run: %s", " ".join(shlex.quote(x) for x in run_cmd))
     rr = subprocess.run(run_cmd, capture_output=True, text=True)
     if rr.returncode != 0:

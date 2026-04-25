@@ -164,7 +164,7 @@ async def post_models_action(body: ModelsActionBody) -> ModelsResponse:
             )
             raise HTTPException(status_code=400, detail=str(e)) from e
         except FileNotFoundError as e:
-            # vLLM: expected {CONFIG_STEM}.env under HOST_LLM_CONFIGS_PATH on the host
+            # vLLM: .env in CONFIGS_DIR, forwarded as -e (no /llm-configs in container)
             logger.warning(
                 "POST models/actions start: 400 configFile=%s reason=%s",
                 config_id,
