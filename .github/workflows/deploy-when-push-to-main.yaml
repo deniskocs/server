@@ -23,7 +23,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./router
         push: true
         platforms: linux/arm64
         tags: deniskocs/router:0.0.1

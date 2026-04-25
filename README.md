@@ -66,4 +66,4 @@ sudo ufw allow in on tailscale0
 - **Ключи API / ACL**: при команде из нескольких людей настройте [ACL](https://login.tailscale.com/admin/acls) в консоли.
 - **Exit node / подсети**: нужны реже; см. [роутинг в Tailscale](https://tailscale.com/kb/1019/subnets), если надо пробросить не только сам сервер, но и локальную LAN за ним.
 
-Подкаталоги с отдельными образами и инструкциями: `base/`, `vllm/`, `download/`.
+Подкаталоги с отдельными образами и инструкциями: `router/` (reverse proxy nginx + TLS, образ `deniskocs/router` — деплой из GitHub Actions), `base/` (базовый CUDA+PyTorch для vLLM, сборка и пуш через `base/deploy.sh`, см. `base/README.md`), `vllm/`, `download/`.

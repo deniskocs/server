@@ -11,21 +11,27 @@
 
 ## Сборка и публикация образа
 
-### Через GitHub Actions
+### Текущий способ: скрипт `deploy.sh`
 
-Используйте workflow "Build and Push Base Image" в разделе Actions GitHub:
-1. Перейдите в раздел Actions
-2. Выберите workflow "Build and Push Base Image"
-3. Нажмите "Run workflow"
-4. Workflow соберет и опубликует образ `deniskocs/core:server-base-0.1.0`
+Сборка и пуш в Docker Hub делаются скриптом в этой папке (из корня репозитория `server` удобно так):
 
-### Локальная сборка (без публикации)
-
-Для локальной сборки образа без публикации:
 ```bash
-cd backend/base
-docker build -t deniskocs/core:server-base-0.1.0 .
+cd base
+./deploy.sh
 ```
+
+Скрипт читает общую конфигурацию (`../config.sh`), токен Docker Hub берёт через `../get-bitwarden-password.sh` и `../login-docker.sh`. Тег образа: `deniskocs/core:server-base-0.1.0`.
+
+### Только локальная сборка (без публикации)
+
+```bash
+cd base
+docker build --platform linux/amd64 -t deniskocs/core:server-base-0.1.0 .
+```
+
+### GitHub Actions (TODO)
+
+Отдельного workflow для сборки и пуша `base` в этом репозитории **пока нет**. Когда появится (например, с именем вроде «Build and Push Base Image»), инструкцию можно будет дополнить путём к `.github/workflows/...` и шагом ручного запуска.
 
 ## Использование базового образа
 

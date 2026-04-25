@@ -2,9 +2,8 @@
 
 set -e
 
-# Цвета для вывода
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/init-colors.sh"
 
 # Функция очистки при выходе
 cleanup() {
