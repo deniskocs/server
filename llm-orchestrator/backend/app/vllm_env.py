@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-# Как .github/workflows/deploy-vllm.yaml
-VLLM_IMAGE = "deniskocs/learn-english:vllm-1.0.0"
-# Ручной деплой (deploy-vllm.yaml) использует --name vllm-server. Оркестратор
+# Как .github/workflows/build-vllm-runner.yaml
+VLLM_IMAGE = "deniskocs/core:vllm-runner-1.0.0"
+
 # поднимает отдельный контейнер, чтобы не пересекаться с тем же именем.
 VLLM_CONTAINER = "vllm-orchestrated"
 DEFAULT_GATED_API_KEY = "localkey"  # -e в workflow; entrypoint: --api-key
