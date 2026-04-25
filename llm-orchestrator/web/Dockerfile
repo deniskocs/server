@@ -6,6 +6,10 @@ WORKDIR /app
 
 ENV npm_config_devdir=/tmp/node-gyp
 
+# Baked at build: browser calls API on 10.0.0.46:<port> (set in deploy-orchestrator workflow)
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 

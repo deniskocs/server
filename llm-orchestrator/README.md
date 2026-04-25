@@ -2,7 +2,7 @@
 
 Сервис и Docker-образ для управления LLM на сервере: конфигурация моделей, загрузка/удаление, запуск/остановка, небольшой веб-интерфейс.
 
-Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript), **Docker-образ** (nginx + `dist/`), **ручной deploy на Mac**: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**Deploy Orchestrator**). **Бэкенд** **ещё** не реализован.
+Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript) → HTTP к API. В [`backend/`](backend/) — **FastAPI** (симуляция, сиды из бывшего `hardcoded`). **Docker-образ** веба (nginx + `dist/`) + **ручной deploy** Mac: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**пока только фронт**; проксирование `/api` на бэкенд в проде — отдельно).
 
 ## Что планируется в этой папке
 
@@ -24,7 +24,7 @@
 | Каталог | Контейнер | Содержимое |
 |---------|-----------|------------|
 | [`web/`](web/) | Nginx + статика | Всё, что касается **фронта** и **раздачи** собранного UI (`dist/`, конфиг Nginx, при появлении — `package.json`, Vite, Dockerfile образа `web`). |
-| [`backend/`](backend/) | Сервис оркестратора | Всё, что касается **бэкенда** (API, логика конфигов, Docker/модели, Dockerfile этого сервиса). |
+| [`backend/`](backend/) | Сервис оркестратора | **FastAPI**: сиды и симуляция; **деплой на LLM-сервер** (тома `~/models`, `~/llm-orchestrator-configs`) — [`.github/workflows/deploy-orchestrator-backend.yaml`](../.github/workflows/deploy-orchestrator-backend.yaml) (см. [`backend/README`](backend/README.md)). |
 
 Корневой [`README.md`](README.md) в `llm-orchestrator` — общая **спека**; деталь по папкам — в `web/README` и `backend/README`. Это **заготовка** под два Docker-образа и `compose`, без дублирования «Learn English» в именах: артефакты оркестратора лежат здесь, по сети `llm_orchestrator` (см. выше).
 

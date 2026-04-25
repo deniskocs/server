@@ -1,0 +1,91 @@
+# Деплой API оркестратора на LLM-сервер (как vLLM: тот же SSH/порт/хост).
+# Образ пушится в Docker Hub; на сервере: pull + run с томами:
+#   ~/models → /models (веса, та же идея что у vLLM)
+#   ~/…/llm-configs → /configs (каталог .env конфигов)
+name: Deploy Orchestrator Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      models_dir:
+        description: "Папка с весами на сервере (относительно $HOME), как у vLLM «models»"
+        required: true
+        default: "models"
+        type: string
+      configs_dir:
+        description: "Папка с llm-configs (.env) на сервере (относительно $HOME)"
+        required: true
+        default: "llm-orchestrator-configs"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build and push LLM Orchestrator API image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./llm-orchestrator/backend
+        file: ./llm-orchestrator/backend/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: deniskocs/llm-orchestrator-api:0.0.1
+
+    - name: Log out of Docker Hub
+      run: docker logout
+
+    - name: Setting up SSH key (same as vLLM deploy)
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY_BASE64_LOCAL_SERVER }}" | base64 -d > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p 2222 -H home.chilik.net >> ~/.ssh/known_hosts 2>/dev/null || true
+        chmod 644 ~/.ssh/known_hosts
+
+    - name: Deploy API on LLM server
+      env:
+        MODELS_REL: ${{ github.event.inputs.models_dir }}
+        CONFIGS_REL: ${{ github.event.inputs.configs_dir }}
+      run: |
+        set -e
+        ssh -i ~/.ssh/id_rsa -p 2222 -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=~/.ssh/known_hosts" \
+          denis@home.chilik.net \
+          "MODELS_REL='${MODELS_REL}' CONFIGS_REL='${CONFIGS_REL}' bash -s" << 'REMOTE'
+        set -e
+        IMAGE="deniskocs/llm-orchestrator-api:0.0.1"
+        NAME="llm-orchestrator-api"
+        MODELS_HOST="${HOME}/${MODELS_REL}"
+        CONFIGS_HOST="${HOME}/${CONFIGS_REL}"
+        mkdir -p "${MODELS_HOST}" "${CONFIGS_HOST}"
+        echo "Pulling ${IMAGE}..."
+        docker pull "${IMAGE}"
+        echo "Stopping old container..."
+        docker rm -f "${NAME}" 2>/dev/null || true
+        echo "Starting ${NAME} with mounts:"
+        echo "  ${MODELS_HOST} -> /models"
+        echo "  ${CONFIGS_HOST} -> /configs"
+        docker run -d --name "${NAME}" --restart unless-stopped \
+          -p 8765:8765 \
+          -e MODELS_DIR=/models \
+          -e CONFIGS_DIR=/configs \
+          -v "$(realpath "${MODELS_HOST}"):/models" \
+          -v "$(realpath "${CONFIGS_HOST}"):/configs" \
+          "${IMAGE}"
+        echo "OK: API on :8765"
+        REMOTE

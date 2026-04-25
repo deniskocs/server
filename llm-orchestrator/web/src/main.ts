@@ -1,15 +1,14 @@
 import "./style.css";
 import type { ConfigRowViewModel, ModelRuntimeState } from "./data/types";
 import {
-  getAllTableRows,
-  getConfigCount,
-  getConfigById,
+  fetchTable,
   getConfigFileText,
   downloadModel,
   startModel,
   stopModel,
   deleteModelWeights,
   deleteConfigFile,
+  ApiError,
 } from "./data/repository";
 import { createActionButton } from "./ui/actionButtons";
 
@@ -54,23 +53,22 @@ function showConfigTextModal(fileName: string, text: string): void {
   closeBtn.focus();
 }
 
-function openConfigViewer(configId: string): void {
-  const text = getConfigFileText(configId);
-  if (text == null) return;
-  const doc = getConfigById(configId);
-  showConfigTextModal(doc?.fileName ?? "config", text);
+async function openConfigViewer(configId: string): Promise<void> {
+  const res = await getConfigFileText(configId);
+  if (res == null) return;
+  showConfigTextModal(res.fileName, res.text);
 }
 
 function renderActions(
   state: ModelRuntimeState,
   r: ConfigRowViewModel,
-  onRefresh: () => void
+  onRefresh: () => void | Promise<void>
 ): HTMLElement {
   const wrap = el("div", { className: "actions" });
   const { configId, actionsLocked: locked } = r;
   const view = createActionButton("viewConfig");
   view.addEventListener("click", () => {
-    openConfigViewer(configId);
+    void openConfigViewer(configId);
   });
   wrap.append(view);
 
@@ -82,42 +80,95 @@ function renderActions(
       load.setAttribute("aria-label", "Downloading");
     }
     load.addEventListener("click", () => {
-      void downloadModel(configId, onRefresh);
+      void (async () => {
+        try {
+          await downloadModel(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     const delCfg = createActionButton("trashConfig", { disabled: locked });
     delCfg.addEventListener("click", () => {
-      deleteConfigFile(configId);
-      onRefresh();
+      void (async () => {
+        try {
+          await deleteConfigFile(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     wrap.append(load, delCfg);
   } else if (state === "downloaded") {
     const play = createActionButton("play", { disabled: locked });
     play.addEventListener("click", () => {
-      void startModel(configId, onRefresh);
+      void (async () => {
+        try {
+          await startModel(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     const delModel = createActionButton("trashModel", { disabled: locked });
     delModel.addEventListener("click", () => {
-      void deleteModelWeights(configId, onRefresh);
+      void (async () => {
+        try {
+          await deleteModelWeights(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     const delCfg = createActionButton("trashConfig", { disabled: locked });
     delCfg.addEventListener("click", () => {
-      deleteConfigFile(configId);
-      onRefresh();
+      void (async () => {
+        try {
+          await deleteConfigFile(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     wrap.append(play, delModel, delCfg);
   } else {
     const stopB = createActionButton("stop", { disabled: locked });
     stopB.addEventListener("click", () => {
-      void stopModel(configId, onRefresh);
+      void (async () => {
+        try {
+          await stopModel(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     const delModel = createActionButton("trashModel", { disabled: locked });
     delModel.addEventListener("click", () => {
-      void deleteModelWeights(configId, onRefresh);
+      void (async () => {
+        try {
+          await deleteModelWeights(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     const delCfg = createActionButton("trashConfig", { disabled: locked });
     delCfg.addEventListener("click", () => {
-      deleteConfigFile(configId);
-      onRefresh();
+      void (async () => {
+        try {
+          await deleteConfigFile(configId);
+        } catch (e) {
+          console.error(e);
+        }
+        await onRefresh();
+      })();
     });
     wrap.append(stopB, delModel, delCfg);
   }
@@ -150,8 +201,10 @@ function renderStatus(r: ConfigRowViewModel): HTMLElement {
   return wrap;
 }
 
-function renderTable(onRefresh: () => void): HTMLElement {
-  const rows = getAllTableRows();
+function renderTable(
+  rows: ConfigRowViewModel[],
+  onRefresh: () => void | Promise<void>
+): HTMLElement {
   const table = el("table", { className: "or-table" });
   const thead = el("thead");
   const trh = el("tr");
@@ -187,34 +240,41 @@ function mount(root: HTMLElement): void {
   root.innerHTML = "";
   const shell = el("div", { className: "shell" });
   const header = el("header", { className: "head" });
-  const sub = el("p", {
-    className: "sub",
-    text: "",
+  const sub = el("p", { className: "sub", text: "Loading…" });
+  const main = el("main", { className: "main" });
+  const addBtn = el("button", {
+    className: "btn primary",
+    text: "+ Add new config",
   });
-  const refresh = (): void => {
-    const n = getConfigCount();
-    sub.textContent = `Configs: ${n} (vllm/llm-configs/*.env) · runtime: simulated (local state)`;
-    const m = root.querySelector("main.main");
-    if (m) m.replaceChildren(renderTable(refresh));
-  };
-  sub.textContent = `Configs: ${getConfigCount()} (vllm/llm-configs/*.env) · runtime: simulated (local state)`;
-
-  header.append(
-    el("h1", { text: "LLM Orchestrator" }),
-    sub
-  );
-
-  const addBtn = el("button", { className: "btn primary", text: "+ Add new config" });
   addBtn.type = "button";
   addBtn.disabled = true;
   const foot = el("div", { className: "footer" });
   foot.append(addBtn);
 
-  const main = el("main", { className: "main" });
-  main.append(renderTable(refresh));
+  const refresh = async (): Promise<void> => {
+    try {
+      const { rows, count } = await fetchTable();
+      sub.textContent = `Configs: ${count} (vllm/llm-configs/*.env) · state: API (simulated on server)`;
+      main.replaceChildren(renderTable(rows, refresh));
+    } catch (e) {
+      const msg = e instanceof ApiError ? `API error ${e.status}` : "Cannot reach API";
+      sub.textContent = `${msg} — start backend: cd backend && uvicorn app.main:app --port 8765`;
+      main.replaceChildren(
+        el("p", {
+          className: "api-err",
+          text: "Vite dev proxies /api → :8765. Or set VITE_API_BASE_URL to your API base.",
+        })
+      );
+    }
+  };
 
+  header.append(
+    el("h1", { text: "LLM Orchestrator" }),
+    sub
+  );
   shell.append(header, main, foot);
   root.append(shell);
+  void refresh();
 }
 
 const app = document.getElementById("app");

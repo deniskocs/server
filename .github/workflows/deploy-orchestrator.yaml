@@ -2,6 +2,12 @@ name: Deploy Orchestrator
 
 on:
   workflow_dispatch:
+    inputs:
+      api_port:
+        description: "Порт бэкенда (LLM Orchestrator API) на 10.0.0.46 (LAN)"
+        required: true
+        default: "8765"
+        type: string
 
 jobs:
   build:
@@ -28,6 +34,8 @@ jobs:
         push: true
         platforms: linux/arm64
         tags: deniskocs/llm-orchestrator-web:0.0.1
+        build-args: |
+          VITE_API_BASE_URL=http://10.0.0.46:${{ github.event.inputs.api_port }}
 
     - name: Logout from Docker Hub
       run: docker logout

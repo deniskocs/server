@@ -314,3 +314,9 @@ body {
 .footer {
   margin-top: 1rem;
 }
+
+.api-err {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
