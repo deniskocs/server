@@ -73,7 +73,7 @@ jobs:
         CONFIGS_HOST="${HOME}/${CONFIGS_REL}"
         mkdir -p "${MODELS_HOST}" "${CONFIGS_HOST}"
         echo "Pulling vLLM runner (Start / docker pull in orchestrator use this)..."
-        docker pull "deniskocs/learn-english:vllm-1.0.0"
+        docker pull "deniskocs/core:vllm-runner-1.0.0"
         echo "Pulling ${IMAGE}..."
         docker pull "${IMAGE}"
         echo "Stopping old container..."

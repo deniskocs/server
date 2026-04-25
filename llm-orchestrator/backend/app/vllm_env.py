@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
-# Как .github/workflows/build-vllm-runner.yaml
-VLLM_IMAGE = "deniskocs/core:vllm-runner-1.0.0"
+# Canonical vLLM runner image: same as .github/workflows/build-vllm-runner.yaml
+# Optional override, e.g. for a custom registry: VLLM_DOCKER_IMAGE=…
+VLLM_IMAGE = (os.environ.get("VLLM_DOCKER_IMAGE") or "").strip() or (
+    "deniskocs/core:vllm-runner-1.0.0"
+)
 
 # поднимает отдельный контейнер, чтобы не пересекаться с тем же именем.
 VLLM_CONTAINER = "vllm-orchestrated"
