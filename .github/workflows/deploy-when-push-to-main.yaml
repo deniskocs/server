@@ -39,7 +39,7 @@ jobs:
         ssh-keyscan ${{ secrets.MAC_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
         chmod 644 ~/.ssh/known_hosts
 
-    - name: Deploy Router on EC2
+    - name: Deploy Router on Mac Studio
       run: |
         ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
         docker network create learn_english || true
