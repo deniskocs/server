@@ -4,3 +4,7 @@
 # Bytecode / cache
 __pycache__/
 *.py[cod]
+
+# MCP local secrets (copy from config.example.yaml)
+mcp/smb-files-mcp/config.yaml
+mcp/smb-books-mcp/config.yaml
