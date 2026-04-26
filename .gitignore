@@ -1,0 +1,6 @@
+# Python virtual environments (MCP servers, scripts, etc.)
+.venv/
+
+# Bytecode / cache
+__pycache__/
+*.py[cod]

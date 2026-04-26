@@ -1,0 +1,24 @@
+# allow_all_commands: true — run_command выполняет любую строку на сервере (без whitelist).
+web_config:
+  allow_all_commands: true
+
+servers:
+  server-gpu:
+    name: server-gpu
+    description: >
+      GPU-сервер с RTX 6000. Запуск различных задач с Hugging Face и
+      связанным ML/инференсом.
+    host: 10.0.0.46
+    port: 22
+    user: denis
+    key_file: /Users/denischilik/.ssh/server.rsa
+
+  mac-studio:
+    name: mac-studio
+    description: >
+      Mac Studio: хост для прочих сервисов; машина компании, работает
+      практически постоянно.
+    host: 10.0.0.107
+    port: 22
+    user: deploy
+    key_file: /home/user/.ssh/id_ed25519
