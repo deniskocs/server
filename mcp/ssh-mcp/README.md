@@ -2,7 +2,17 @@
 
 Минимальный MCP-сервер на Python: выполнение **только заранее разрешённых** SSH-команд на хостах из `config.yaml`. Реализовано через системный клиент `ssh` и [FastMCP](https://github.com/modelcontextprotocol/python-sdk) (`mcp`).
 
-## Установка зависимостей
+## Запуск (рекомендуется)
+
+Скрипт `run.sh` сам создаёт `.venv` при необходимости и ставит зависимости из `requirements.txt`, если виртуальное окружение новое или файл зависимостей изменился:
+
+```bash
+cd ssh-mcp
+chmod +x run.sh   # один раз
+./run.sh
+```
+
+Ручная установка (если нужна без скрипта):
 
 ```bash
 cd ssh-mcp
@@ -22,15 +32,29 @@ pip install -r requirements.txt
 
 ```bash
 cd ssh-mcp
-source .venv/bin/activate
-python server.py
+./run.sh
 ```
+
+Либо с активированным venv: `python server.py`.
 
 По умолчанию используется stdio-транспорт MCP (типично для встраивания в Cursor / другие MCP-клиенты).
 
 ### Пример конфигурации в Cursor
 
-В настройках MCP укажите команду запуска, например:
+В настройках MCP удобнее указать скрипт (venv и зависимости поднимутся сами):
+
+```json
+{
+  "mcpServers": {
+    "ssh-mcp": {
+      "command": "/absolute/path/to/ssh-mcp/run.sh",
+      "args": []
+    }
+  }
+}
+```
+
+Альтернатива — напрямую интерпретатор из venv (после ручной установки):
 
 ```json
 {
