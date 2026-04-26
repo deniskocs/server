@@ -1,3 +1,0 @@
-mcp
-pyyaml
-smbprotocol>=1.15.0
