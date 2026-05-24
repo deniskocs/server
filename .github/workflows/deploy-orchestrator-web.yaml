@@ -1,4 +1,4 @@
-name: Deploy Orchestrator
+name: Deploy Orchestrator Web
 
 on:
   workflow_dispatch:
@@ -51,6 +51,8 @@ jobs:
     - name: Deploy LLM Orchestrator web on Mac
       run: |
         ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
+        export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+        colima start
         docker network create llm_orchestrator || true
         docker rm llm-orchestrator-web -f
         docker rmi deniskocs/llm-orchestrator-web:0.0.1

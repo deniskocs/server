@@ -2,14 +2,14 @@
 
 Сервис и Docker-образ для управления LLM на сервере: конфигурация моделей, загрузка/удаление, запуск/остановка, небольшой веб-интерфейс.
 
-Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript) → HTTP к API. В [`backend/`](backend/) — **FastAPI** (конфиги `*.env` в `CONFIGS_DIR`, vLLM через Docker, логи по шагам). **Docker-образ** веба (nginx + `dist/`) + **ручной deploy** Mac: [`.github/workflows/deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (**пока только фронт**; проксирование `/api` на бэкенд в проде — отдельно).
+Статус: **черновик требований** — основная спецификация здесь. В [`web/`](web/) — UI (Vite + TypeScript) → HTTP к API. В [`backend/`](backend/) — **FastAPI** (конфиги `*.env` в `CONFIGS_DIR`, vLLM через Docker, логи по шагам). **Docker-образ** веба (nginx + `dist/`) + **ручной deploy** Mac: [`.github/workflows/deploy-orchestrator-web.yaml`](../.github/workflows/deploy-orchestrator-web.yaml) (**пока только фронт**; проксирование `/api` на бэкенд в проде — отдельно).
 
 ## Что планируется в этой папке
 
 | Артефакт | Назначение |
 |----------|------------|
 | **Docker-образ** | Упаковка оркестратора: веб-часть + логика работы с конфигом и жизненным циклом моделей. |
-| **Скрипт релиза / установка (web)** | Сборка и публикация образа + SSH на Mac: [`deploy-orchestrator.yaml`](../.github/workflows/deploy-orchestrator.yaml) (теги и порты — в yaml), отдельно от deploy router. |
+| **Скрипт релиза / установка (web)** | Сборка и публикация образа + SSH на Mac: [`deploy-orchestrator-web.yaml`](../.github/workflows/deploy-orchestrator-web.yaml) (теги и порты — в yaml), отдельно от deploy router. |
 
 ## Архитектура деплоя
 
@@ -115,5 +115,5 @@
 ## Следующие шаги (когда будете кодить)
 
 1. Согласовать формат `.env` с [docker-entrypoint vLLM](vllm-runner/docker-entrypoint.sh) и при необходимости с корневым [`llm-configs`](../llm-configs/) / [`load_config.py`](../llm-configs/load_config.py).
-2. **Деплой** API: [deploy-orchestrator-backend](../.github/workflows/deploy-orchestrator-backend.yaml). **Образ vLLM (Decaf):** [build-vllm-runner](../.github/workflows/build-vllm-runner.yaml) или `vllm/deploy.sh`. [deploy vLLM](../.github/workflows/deploy-vllm.yaml) — перезапуск `vllm-server` на сервере. [deploy Orchestrator](../.github/workflows/deploy-orchestrator.yaml) / [deploy Router](../.github/workflows/deploy-router.yaml) — прочие.
+2. **Деплой** API: [deploy-orchestrator-backend](../.github/workflows/deploy-orchestrator-backend.yaml). **Образ vLLM (Decaf):** [build-vllm-runner](../.github/workflows/build-vllm-runner.yaml) или `vllm/deploy.sh`. [deploy vLLM](../.github/workflows/deploy-vllm.yaml) — перезапуск `vllm-server` на сервере. [deploy Orchestrator Web](../.github/workflows/deploy-orchestrator-web.yaml) / [deploy Router](../.github/workflows/deploy-router.yaml) — прочие.
 3. Поднять **фронт** (TS + сборка) и **HTTP-сервис** с отдачей `dist` и API.
