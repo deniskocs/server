@@ -12,6 +12,35 @@ link_stage_certs() {
     ln -sf /etc/letsencrypt/live/stage.t-zone.org/fullchain.pem /etc/nginx/ssl/stage.t-zone.org.bundle.crt
 }
 
+STAGE_CERT_DOMAINS=(
+    stage.t-zone.org
+    auth.stage.t-zone.org
+    tenant.stage.t-zone.org
+    darlings.stage.t-zone.org
+)
+
+check_stage_cert_sans() {
+    local cert_path="/etc/letsencrypt/live/stage.t-zone.org/fullchain.pem"
+    local domain
+    local sans
+
+    if [ ! -f "$cert_path" ]; then
+        echo "No staging certificate found"
+        return 1
+    fi
+
+    sans=$(openssl x509 -in "$cert_path" -noout -text)
+    for domain in "${STAGE_CERT_DOMAINS[@]}"; do
+        if ! printf '%s' "$sans" | grep -Fq "DNS:${domain}"; then
+            echo "Staging certificate missing SAN: $domain"
+            return 1
+        fi
+    done
+
+    echo "Staging certificate covers all required SANs."
+    return 0
+}
+
 check_cert_expiry() {
     local domain=$1
     local cert_path="/etc/letsencrypt/live/$domain/fullchain.pem"
@@ -79,16 +108,17 @@ get_real_certs() {
        /etc/letsencrypt/archive/stage.t-zone.org \
        /etc/letsencrypt/renewal/stage.t-zone.org.conf
 
-    certbot certonly --webroot -w /var/www/certbot \
+    stage_certbot_args=(certonly --webroot -w /var/www/certbot \
         --email deniskocs@gmail.com \
-        -d stage.t-zone.org \
-        -d auth.stage.t-zone.org \
-        -d tenant.stage.t-zone.org \
         --cert-name stage.t-zone.org \
         --rsa-key-size 4096 \
         --agree-tos \
         --force-renewal \
-        --non-interactive
+        --non-interactive)
+    for domain in "${STAGE_CERT_DOMAINS[@]}"; do
+        stage_certbot_args+=(-d "$domain")
+    done
+    certbot "${stage_certbot_args[@]}"
 
     link_stage_certs
 }
@@ -102,6 +132,9 @@ if ! check_cert_expiry api.chilik.net; then
     certs_ok=false
 fi
 if ! check_cert_expiry stage.t-zone.org; then
+    certs_ok=false
+fi
+if ! check_stage_cert_sans; then
     certs_ok=false
 fi
 
