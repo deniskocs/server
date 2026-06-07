@@ -1,6 +1,6 @@
 # `web` — статика и Nginx
 
-Здесь всё, что относится к **первому** контейнеру в деплое: **фронтенд** (HTML/CSS/TypeScript, сборка в `dist/`) и **конфиг Nginx** (только раздача SPA; **API** в production — через `VITE_API_BASE_URL`, в CI: `http://10.0.0.46:<port>`).
+Здесь всё, что относится к **первому** контейнеру в деплое: **фронтенд** (HTML/CSS/TypeScript, сборка в `dist/`) и **конфиг Nginx** (только раздача SPA; **API** в production — через `VITE_API_BASE_URL`, в CI: `http://10.0.0.3:<port>`).
 
 ## Структура
 
@@ -34,11 +34,11 @@ npm run typecheck
 
 Сборка в образе: TypeScript + Vite (минификация, `sourcemap: false` в `vite.config.ts`, без публичных source maps) → каталог `dist/` → **nginx** слушает **80**, отдаёт файлы.
 
-Образ в CI собирает и выкатывает ручной workflow [**Deploy Orchestrator Web**](../../.github/workflows/deploy-orchestrator-web.yaml). В CI в образ вшивается `VITE_API_BASE_URL=http://10.0.0.46:<api_port>` (IP в LAN зафиксирован, **порт** — input `api_port`, по умолчанию **8765**), чтобы UI ходил на бэкенд на LLM-сервере. Локальный повтор:
+Образ в CI собирает и выкатывает ручной workflow [**Deploy Orchestrator Web**](../../.github/workflows/deploy-orchestrator-web.yaml). В CI в образ вшивается `VITE_API_BASE_URL=http://10.0.0.3:<api_port>` (IP в LAN зафиксирован, **порт** — input `api_port`, по умолчанию **8765**), чтобы UI ходил на бэкенд на LLM-сервере. Локальный повтор:
 
 ```bash
 cd web && docker build -t llm-orchestrator-web:local -f Dockerfile \
-  --build-arg VITE_API_BASE_URL=http://10.0.0.46:8765 .
+  --build-arg VITE_API_BASE_URL=http://10.0.0.3:8765 .
 docker run --rm -p 8080:80 llm-orchestrator-web:local
 ```
 
@@ -50,7 +50,7 @@ docker run --rm -p 8080:80 llm-orchestrator-web:local
 
 Отдельный ручной workflow (не смешан с router): [`.github/workflows/deploy-orchestrator-web.yaml`](../../.github/workflows/deploy-orchestrator-web.yaml) · имя в Actions: **«Deploy Orchestrator Web»** · только **`workflow_dispatch`**.
 
-**Actions** → **Deploy Orchestrator Web** → **Run workflow** — укажи **api_port** (порт бэка на `10.0.0.46`, по умолчанию 8765) → `docker build` (с `VITE_API_BASE_URL` выше) + `push` **`deniskocs/llm-orchestrator-web:0.0.1`**, по SSH: сеть `llm_orchestrator`, контейнер **`llm-orchestrator-web`**, **`8088:80`**.
+**Actions** → **Deploy Orchestrator Web** → **Run workflow** — укажи **api_port** (порт бэка на `10.0.0.3`, по умолчанию 8765) → `docker build` (с `VITE_API_BASE_URL` выше) + `push` **`deniskocs/llm-orchestrator-web:0.0.1`**, по SSH: сеть `llm_orchestrator`, контейнер **`llm-orchestrator-web`**, **`8088:80`**.
 
 Секреты: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_ACCESS_TOKEN`, `SSH_PRIVATE_KEY_DEPLOY_TO_MAC_SERVER_BASE64`, `MAC_HOST`, `MAC_USER`. Тег/порт — в yaml. **linux/arm64** (Apple Silicon); иначе смени `platforms` в `build-push`.
 
