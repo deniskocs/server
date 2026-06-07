@@ -1,0 +1,4 @@
+# Минимальный старт; ingress и domain — позже.
+server:
+  service:
+    type: ClusterIP
