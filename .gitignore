@@ -8,3 +8,8 @@ __pycache__/
 # MCP local secrets (copy from config.example.yaml)
 mcp/smb-files-mcp/config.yaml
 mcp/smb-books-mcp/config.yaml
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
