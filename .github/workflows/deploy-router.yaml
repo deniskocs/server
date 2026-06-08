@@ -42,9 +42,16 @@ jobs:
     - name: Deploy Router on Mac Studio
       run: |
         ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
+        set -e
+        export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+        colima start
         docker network create learn_english || true
         docker network create tzone_staging || true
-        docker rm router -f
-        docker rmi deniskocs/router:0.0.1
-        docker run -d -ti --name router -p 80:80 -p 443:443 -v /Users/home_mac_server/letsencrypt:/etc/letsencrypt --network learn_english --network tzone_staging --restart unless-stopped deniskocs/router:0.0.1
+        docker pull deniskocs/router:0.0.1
+        docker rm -f router 2>/dev/null || true
+        docker run -d --name router -p 80:80 -p 443:443 \
+          -v /Users/home_mac_server/letsencrypt:/etc/letsencrypt \
+          --network learn_english --network tzone_staging \
+          --restart unless-stopped deniskocs/router:0.0.1
+        docker ps --filter name=router
         EOF
