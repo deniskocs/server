@@ -61,13 +61,35 @@ jobs:
         ls -la "$HOME/.colima/default/docker.sock" 2>&1 || true
         ls -la "$HOME/.docker/run/docker.sock" 2>&1 || true
 
-        echo "=== colima start ==="
-        colima start 2>&1
-        sleep 3
-        colima status 2>&1
         export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
         echo "DOCKER_HOST=$DOCKER_HOST"
+
+        echo "=== colima (start only if not running) ==="
+        if colima status >/dev/null 2>&1; then
+          echo "colima already running — skip start"
+        else
+          echo "colima not running — stop stale VM and start"
+          colima stop --force 2>&1 || true
+          colima start 2>&1
+        fi
+        colima status 2>&1 || true
+
+        echo "=== wait for docker daemon ==="
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          if docker info >/dev/null 2>&1; then
+            echo "docker ready after ${i} attempt(s)"
+            break
+          fi
+          echo "docker not ready, retry ${i}/10..."
+          sleep 3
+        done
         docker version 2>&1 || true
+        docker info 2>&1 | head -20 || true
+        if ! docker info >/dev/null 2>&1; then
+          echo "=== colima ha.stderr.log ==="
+          cat "$HOME/.colima/_lima/colima/ha.stderr.log" 2>&1 || true
+          exit 1
+        fi
 
         set -e
         docker network create learn_english || true
