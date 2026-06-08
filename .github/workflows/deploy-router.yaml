@@ -42,9 +42,34 @@ jobs:
     - name: Deploy Router on Mac Studio
       run: |
         ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" ${{ secrets.MAC_USER }}@${{ secrets.MAC_HOST }} << 'EOF'
-        set -e
+        set -x
         export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
-        colima start
+
+        echo "=== deploy diagnostics (before docker) ==="
+        date
+        whoami
+        hostname
+        uname -a
+        echo "PATH=$PATH"
+        echo "HOME=$HOME"
+        echo "SHELL=$SHELL"
+        echo "DOCKER_HOST=${DOCKER_HOST:-<unset>}"
+        command -v colima || true
+        command -v docker || true
+        colima version 2>&1 || true
+        colima status 2>&1 || true
+        ls -la "$HOME/.colima/default/docker.sock" 2>&1 || true
+        ls -la "$HOME/.docker/run/docker.sock" 2>&1 || true
+
+        echo "=== colima start ==="
+        colima start 2>&1
+        sleep 3
+        colima status 2>&1
+        export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+        echo "DOCKER_HOST=$DOCKER_HOST"
+        docker version 2>&1 || true
+
+        set -e
         docker network create learn_english || true
         docker network create tzone_staging || true
         docker pull deniskocs/router:0.0.1
