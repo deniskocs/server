@@ -3,12 +3,12 @@ output "mac_host" {
   value       = var.mac_host
 }
 
-output "dir_name" {
-  description = "Имя каталога в home пользователя"
-  value       = var.dir_name
+output "utm_cask" {
+  description = "Homebrew cask для UTM"
+  value       = var.utm_cask
 }
 
-output "home_dir_path" {
-  description = "Путь к каталогу относительно home (~/<dir_name>)"
-  value       = local.home_dir_path
+output "utm_app_path" {
+  description = "Путь к UTM.app на Mac"
+  value       = "/Applications/UTM.app"
 }

@@ -15,8 +15,8 @@ variable "ssh_private_key_base64" {
   default     = null
 }
 
-variable "dir_name" {
-  description = "Имя каталога в home SSH-пользователя ($HOME/dir_name)"
+variable "utm_cask" {
+  description = "Имя Homebrew cask для UTM"
   type        = string
-  default     = "test_terraform"
+  default     = "utm"
 }

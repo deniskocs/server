@@ -7,6 +7,4 @@ locals {
     user        = var.mac_user
     private_key = local.ssh_private_key
   }
-
-  home_dir_path = "~/${var.dir_name}"
 }
