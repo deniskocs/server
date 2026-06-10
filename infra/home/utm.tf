@@ -11,11 +11,9 @@ resource "null_resource" "utm" {
   }
 
   provisioner "remote-exec" {
-    script = "${path.module}/scripts/install-utm.sh"
-
-    environment = {
-      UTM_CASK = var.utm_cask
-    }
+    inline = [templatefile("${path.module}/scripts/install-utm.sh.tpl", {
+      utm_cask = var.utm_cask
+    })]
 
     connection {
       type        = local.ssh_connection.type
