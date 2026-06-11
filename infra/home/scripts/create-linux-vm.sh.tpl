@@ -3,7 +3,8 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 
-UTMCTL="/Applications/UTM.app/Contents/MacOS/utmctl"
+UTM_APP="/Applications/UTM.app"
+UTMCTL="$${UTM_APP}/Contents/MacOS/utmctl"
 UTM_DATA="$${HOME}/Library/Containers/com.utmapp.UTM/Data/Documents"
 
 VM_NAME="${linux_vm_name}"
@@ -24,6 +25,76 @@ if [ ! -x "$UTMCTL" ]; then
   echo "utmctl not found at $UTMCTL — install UTM first" >&2
   exit 1
 fi
+
+if [ ! -d "$UTM_APP" ]; then
+  echo "UTM.app not found at $UTM_APP" >&2
+  exit 1
+fi
+
+find_qemu_img() {
+  local candidate
+  for candidate in \
+    "$(command -v qemu-img 2>/dev/null || true)" \
+    "$${UTM_APP}/Contents/MacOS/qemu-img" \
+    "/opt/homebrew/bin/qemu-img" \
+    "/usr/local/bin/qemu-img"; do
+    if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+utm_ready() {
+  "$UTMCTL" list >/dev/null 2>&1
+}
+
+vm_registered() {
+  "$UTMCTL" list 2>/dev/null | awk -v name="$VM_NAME" '$1 == name { found=1 } END { exit !found }'
+}
+
+ensure_utm_running() {
+  if utm_ready; then
+    return 0
+  fi
+
+  echo "Launching UTM via utmctl/UTM.app ..."
+  open "$UTM_APP"
+
+  for _ in $(seq 1 30); do
+    if utm_ready; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "UTM did not become ready for utmctl" >&2
+  exit 1
+}
+
+ensure_vm_registered() {
+  ensure_utm_running
+
+  if vm_registered; then
+    return 0
+  fi
+
+  echo "Restarting UTM so it picks up the new VM ..."
+  killall UTM 2>/dev/null || true
+  sleep 2
+  open "$UTM_APP"
+
+  for _ in $(seq 1 30); do
+    if utm_ready && vm_registered; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "UTM did not register VM '$VM_NAME'" >&2
+  exit 1
+}
 
 utm_network_mode() {
   case "$1" in
@@ -122,10 +193,11 @@ DISK_FILE="$${VM_DIR}/Data/$${DISK_UUID}.qcow2"
 
 cp "$SEED_ISO" "$SEED_FILE"
 
-if command -v qemu-img >/dev/null 2>&1; then
-  echo "Preparing VM disk from cloud image ..."
-  qemu-img convert -O qcow2 "$IMAGE_PATH" "$DISK_FILE"
-  qemu-img resize "$DISK_FILE" "$${DISK_GB}G"
+QEMU_IMG="$(find_qemu_img || true)"
+if [ -n "$QEMU_IMG" ]; then
+  echo "Preparing VM disk from cloud image with $QEMU_IMG ..."
+  "$QEMU_IMG" convert -O qcow2 "$IMAGE_PATH" "$DISK_FILE"
+  "$QEMU_IMG" resize "$DISK_FILE" "$${DISK_GB}G"
 else
   echo "qemu-img not found, linking cloud image as VM disk ..."
   ln -sf "$IMAGE_PATH" "$DISK_FILE"
@@ -236,13 +308,9 @@ EOF
 
 plutil -lint "$CONFIG_PLIST"
 
-killall UTM 2>/dev/null || true
-sleep 2
+ensure_vm_registered
 
-open -a UTM
-sleep 5
-
-echo "Starting VM '$VM_NAME' ..."
+echo "Starting VM '$VM_NAME' with utmctl ..."
 "$UTMCTL" start "$VM_NAME"
 
 echo "Linux VM '$VM_NAME' created (static: $STATIC_IP)"
