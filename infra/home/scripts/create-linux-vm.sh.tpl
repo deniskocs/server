@@ -100,23 +100,23 @@ create_seed_iso() {
 echo "Creating cloud-init seed ISO ..."
 create_seed_iso
 
+HEADLESS_CONFIG="displays:{}, serial ports:{}"
+
 if [ "$NETWORK_MODE" = "bridged" ] && [ -n "$BRIDGE_INTERFACE" ]; then
-  osascript <<APPLESCRIPT
-tell application "UTM"
-  set diskPath to POSIX file "$IMAGE_PATH"
-  set seedPath to POSIX file "$SEED_ISO"
-  make new virtual machine with properties {backend:qemu, configuration:{name:"$VM_NAME", notes:"Managed by Terraform infra/home", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$((DISK_GB * 1024))}}, network interfaces:{{mode:bridged, host interface:"$BRIDGE_INTERFACE"}}}}
-end tell
-APPLESCRIPT
+  NETWORK_CONFIG="{{mode:bridged, host interface:\"$BRIDGE_INTERFACE\"}}"
 else
-  osascript <<APPLESCRIPT
+  NETWORK_CONFIG="{{mode:$NETWORK_MODE}}"
+fi
+
+echo "Creating headless UTM VM '$VM_NAME' ..."
+osascript <<APPLESCRIPT
 tell application "UTM"
   set diskPath to POSIX file "$IMAGE_PATH"
   set seedPath to POSIX file "$SEED_ISO"
-  make new virtual machine with properties {backend:qemu, configuration:{name:"$VM_NAME", notes:"Managed by Terraform infra/home", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$((DISK_GB * 1024))}}, network interfaces:{{mode:$NETWORK_MODE}}}}
+  set newVM to make new virtual machine with properties {backend:qemu, configuration:{name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$((DISK_GB * 1024))}}, network interfaces:{$NETWORK_CONFIG}, $HEADLESS_CONFIG}}
+  update configuration of newVM with {$HEADLESS_CONFIG}
 end tell
 APPLESCRIPT
-fi
 
 echo "Starting VM '$VM_NAME' ..."
 "$UTMCTL" start "$VM_NAME"
