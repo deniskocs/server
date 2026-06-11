@@ -4,28 +4,40 @@ set -euo pipefail
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 
 UTMCTL="/Applications/UTM.app/Contents/MacOS/utmctl"
+UTM_DATA="$${HOME}/Library/Containers/com.utmapp.UTM/Data/Documents"
+
 VM_NAME="${linux_vm_name}"
 IMAGE_URL="${linux_image_url}"
 IMAGE_PATH="${linux_image_path}"
 IMAGE_PATH="$${IMAGE_PATH/#\~/$HOME}"
 STATIC_IP="${static_ip}"
-GATEWAY="${network_gateway}"
 MEMORY_MB="${linux_vm_memory_mb}"
 CPU_CORES="${linux_vm_cpu_cores}"
 DISK_GB="${linux_vm_disk_gb}"
 NETWORK_MODE="${linux_vm_network_mode}"
 BRIDGE_INTERFACE="${linux_vm_bridge_interface}"
 
+VM_DIR="$${UTM_DATA}/${linux_vm_name}.utm"
+CONFIG_PLIST="$${VM_DIR}/config.plist"
+
 if [ ! -x "$UTMCTL" ]; then
   echo "utmctl not found at $UTMCTL — install UTM first" >&2
   exit 1
 fi
 
+utm_network_mode() {
+  case "$1" in
+    bridged) echo "Bridged" ;;
+    shared) echo "Shared" ;;
+    emulated) echo "Emulated" ;;
+    host) echo "Host" ;;
+    *) echo "Shared" ;;
+  esac
+}
+
 vm_exists() {
-  osascript -e 'tell application "UTM" to get name of every virtual machine' \
-    | tr ',' '\n' \
-    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
-    | grep -qxF "$VM_NAME"
+  [ -d "$VM_DIR" ] && return 0
+  "$UTMCTL" list 2>/dev/null | awk -v name="$VM_NAME" '$1 == name { found=1 } END { exit !found }'
 }
 
 if vm_exists; then
@@ -70,9 +82,6 @@ ethernets:
     dhcp4: false
     addresses:
       - ${static_ip}/${network_prefix}
-EOF
-
-cat >> "$SEED_DIR/network-config" <<EOF
     routes:
       - to: default
         via: ${network_gateway}
@@ -100,39 +109,138 @@ create_seed_iso() {
 echo "Creating cloud-init seed ISO ..."
 create_seed_iso
 
-APPLESCRIPT_FILE="$(mktemp).applescript"
-trap 'rm -rf "$SEED_DIR" "$APPLESCRIPT_FILE"' EXIT
+SEED_UUID="$(uuidgen)"
+DISK_UUID="$(uuidgen)"
+VM_UUID="$(uuidgen)"
+MAC_ADDRESS="$(printf '52:54:00:%02x:%02x:%02x' $((RANDOM % 256)) $((RANDOM % 256)) $((RANDOM % 256)))"
+NETWORK_MODE_PLIST="$(utm_network_mode "$NETWORK_MODE")"
 
-DISK_MIB=$((DISK_GB * 1024))
+mkdir -p "$${VM_DIR}/Data"
 
-if [ "$NETWORK_MODE" = "bridged" ] && [ -n "$BRIDGE_INTERFACE" ]; then
-  cat > "$APPLESCRIPT_FILE" <<APPLESCRIPT
-tell application "UTM"
-  set diskPath to POSIX file "$IMAGE_PATH"
-  set seedPath to POSIX file "$SEED_ISO"
-  set vmCfg to {name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$DISK_MIB}}, network interfaces:{{mode:bridged, host interface:"$BRIDGE_INTERFACE"}}, displays:{}, serial ports:{}}
-  set newVM to make new virtual machine with properties {backend:qemu, configuration:vmCfg}
-  tell newVM
-    update configuration with {displays:{}, serial ports:{}}
-  end tell
-end tell
-APPLESCRIPT
+SEED_FILE="$${VM_DIR}/Data/$${SEED_UUID}.iso"
+DISK_FILE="$${VM_DIR}/Data/$${DISK_UUID}.qcow2"
+
+cp "$SEED_ISO" "$SEED_FILE"
+
+if command -v qemu-img >/dev/null 2>&1; then
+  echo "Preparing VM disk from cloud image ..."
+  qemu-img convert -O qcow2 "$IMAGE_PATH" "$DISK_FILE"
+  qemu-img resize "$DISK_FILE" "$${DISK_GB}G"
 else
-  cat > "$APPLESCRIPT_FILE" <<APPLESCRIPT
-tell application "UTM"
-  set diskPath to POSIX file "$IMAGE_PATH"
-  set seedPath to POSIX file "$SEED_ISO"
-  set vmCfg to {name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$DISK_MIB}}, network interfaces:{{mode:$NETWORK_MODE}}, displays:{}, serial ports:{}}
-  set newVM to make new virtual machine with properties {backend:qemu, configuration:vmCfg}
-  tell newVM
-    update configuration with {displays:{}, serial ports:{}}
-  end tell
-end tell
-APPLESCRIPT
+  echo "qemu-img not found, linking cloud image as VM disk ..."
+  ln -sf "$IMAGE_PATH" "$DISK_FILE"
 fi
 
-echo "Creating headless UTM VM '$VM_NAME' ..."
-osascript "$APPLESCRIPT_FILE"
+BRIDGE_INTERFACE_XML=""
+if [ -n "$BRIDGE_INTERFACE" ]; then
+  BRIDGE_INTERFACE_XML="        <key>BridgeInterface</key>
+        <string>$${BRIDGE_INTERFACE}</string>"
+fi
+
+echo "Writing UTM config.plist for headless VM '$VM_NAME' ..."
+cat > "$CONFIG_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Backend</key>
+    <string>QEMU</string>
+    <key>ConfigurationVersion</key>
+    <integer>4</integer>
+    <key>System</key>
+    <dict>
+        <key>Architecture</key>
+        <string>aarch64</string>
+        <key>CPU</key>
+        <string>default</string>
+        <key>CPUCount</key>
+        <integer>$${CPU_CORES}</integer>
+        <key>MemorySize</key>
+        <integer>$${MEMORY_MB}</integer>
+        <key>Target</key>
+        <string>virt</string>
+    </dict>
+    <key>QEMU</key>
+    <dict>
+        <key>Hypervisor</key>
+        <true/>
+        <key>UEFIBoot</key>
+        <true/>
+    </dict>
+    <key>Input</key>
+    <dict>
+        <key>UsbSharing</key>
+        <false/>
+    </dict>
+    <key>Drive</key>
+    <array>
+        <dict>
+            <key>Identifier</key>
+            <string>$${SEED_UUID}</string>
+            <key>ImageName</key>
+            <string>$${SEED_UUID}.iso</string>
+            <key>ImageType</key>
+            <string>CD</string>
+            <key>Interface</key>
+            <string>USB</string>
+            <key>InterfaceVersion</key>
+            <integer>1</integer>
+            <key>ReadOnly</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>Identifier</key>
+            <string>$${DISK_UUID}</string>
+            <key>ImageName</key>
+            <string>$${DISK_UUID}.qcow2</string>
+            <key>ImageType</key>
+            <string>Disk</string>
+            <key>Interface</key>
+            <string>VirtIO</string>
+            <key>InterfaceVersion</key>
+            <integer>1</integer>
+            <key>ReadOnly</key>
+            <false/>
+        </dict>
+    </array>
+    <key>Network</key>
+    <array>
+        <dict>
+            <key>Hardware</key>
+            <string>virtio-net-pci</string>
+            <key>Mode</key>
+            <string>$${NETWORK_MODE_PLIST}</string>
+            <key>IsolateFromHost</key>
+            <false/>
+            <key>MacAddress</key>
+            <string>$${MAC_ADDRESS}</string>
+$${BRIDGE_INTERFACE_XML}
+        </dict>
+    </array>
+    <key>Information</key>
+    <dict>
+        <key>Name</key>
+        <string>$${VM_NAME}</string>
+        <key>UUID</key>
+        <string>$${VM_UUID}</string>
+        <key>Notes</key>
+        <string>Managed by Terraform infra/home (headless)</string>
+        <key>Icon</key>
+        <string>linux</string>
+        <key>IconCustom</key>
+        <false/>
+    </dict>
+</dict>
+</plist>
+EOF
+
+plutil -lint "$CONFIG_PLIST"
+
+killall UTM 2>/dev/null || true
+sleep 2
+
+open -a UTM
+sleep 5
 
 echo "Starting VM '$VM_NAME' ..."
 "$UTMCTL" start "$VM_NAME"
