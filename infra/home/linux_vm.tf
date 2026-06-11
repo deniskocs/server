@@ -13,12 +13,12 @@ resource "null_resource" "linux_vm" {
     linux_image_url           = var.linux_image_url
     linux_image_path          = var.linux_image_path
     static_ip                 = var.static_ip
-    network_prefix            = var.network_prefix
+    network_prefix            = tostring(var.network_prefix)
     network_gateway           = var.network_gateway
-    dns_servers               = var.dns_servers
-    linux_vm_memory_mb        = var.linux_vm_memory_mb
-    linux_vm_cpu_cores        = var.linux_vm_cpu_cores
-    linux_vm_disk_gb          = var.linux_vm_disk_gb
+    dns_servers               = join(",", var.dns_servers)
+    linux_vm_memory_mb        = tostring(var.linux_vm_memory_mb)
+    linux_vm_cpu_cores        = tostring(var.linux_vm_cpu_cores)
+    linux_vm_disk_gb          = tostring(var.linux_vm_disk_gb)
     linux_vm_network_mode     = var.linux_vm_network_mode
     linux_vm_bridge_interface = var.linux_vm_bridge_interface
   }
