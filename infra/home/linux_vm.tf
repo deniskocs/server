@@ -21,6 +21,8 @@ resource "null_resource" "linux_vm" {
     linux_vm_disk_gb          = tostring(var.linux_vm_disk_gb)
     linux_vm_network_mode     = var.linux_vm_network_mode
     linux_vm_bridge_interface = var.linux_vm_bridge_interface
+    utm_documents_dir         = var.utm_documents_dir
+    utm_run_as_user           = var.utm_run_as_user
   }
 
   provisioner "remote-exec" {
@@ -37,6 +39,8 @@ resource "null_resource" "linux_vm" {
       linux_vm_disk_gb          = var.linux_vm_disk_gb
       linux_vm_network_mode     = var.linux_vm_network_mode
       linux_vm_bridge_interface = var.linux_vm_bridge_interface
+      utm_documents_dir         = var.utm_documents_dir
+      utm_run_as_user           = var.utm_run_as_user
     })]
 
     connection {

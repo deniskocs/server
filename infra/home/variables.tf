@@ -97,3 +97,15 @@ variable "linux_vm_bridge_interface" {
   type        = string
   default     = ""
 }
+
+variable "utm_documents_dir" {
+  description = "Каталог UTM Documents с .utm-бандлами (sandbox пользователя, под которым открыт UTM). Пусто — $HOME текущего SSH-пользователя."
+  type        = string
+  default     = ""
+}
+
+variable "utm_run_as_user" {
+  description = "macOS-пользователь для open/utmctl (должен совпадать с владельцем UTM GUI). Пусто — текущий SSH-пользователь."
+  type        = string
+  default     = ""
+}

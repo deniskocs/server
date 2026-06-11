@@ -5,7 +5,20 @@ export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 
 UTM_APP="/Applications/UTM.app"
 UTMCTL="$${UTM_APP}/Contents/MacOS/utmctl"
-UTM_DATA="$${HOME}/Library/Containers/com.utmapp.UTM/Data/Documents"
+UTM_DATA="${utm_documents_dir}"
+UTM_RUN_AS="${utm_run_as_user}"
+
+if [ -z "$UTM_DATA" ]; then
+  UTM_DATA="$${HOME}/Library/Containers/com.utmapp.UTM/Data/Documents"
+fi
+
+run_utm_user() {
+  if [ -n "$UTM_RUN_AS" ] && [ "$$(id -un)" != "$UTM_RUN_AS" ]; then
+    sudo -u "$UTM_RUN_AS" "$@"
+  else
+    "$@"
+  fi
+}
 
 VM_NAME="${linux_vm_name}"
 IMAGE_URL="${linux_image_url}"
@@ -46,54 +59,21 @@ find_qemu_img() {
   return 1
 }
 
-utm_ready() {
-  "$UTMCTL" list >/dev/null 2>&1
-}
+start_vm() {
+  echo "Starting VM '$VM_NAME' with utmctl (user: $${UTM_RUN_AS:-$$(id -un)}) ..."
+  run_utm_user open "$UTM_APP" >/dev/null 2>&1 || true
+  sleep 5
 
-vm_registered() {
-  "$UTMCTL" list 2>/dev/null | awk -v name="$VM_NAME" '$1 == name { found=1 } END { exit !found }'
-}
-
-ensure_utm_running() {
-  if utm_ready; then
+  if run_utm_user "$UTMCTL" start "$VM_NAME"; then
+    echo "VM '$VM_NAME' started"
     return 0
   fi
 
-  echo "Launching UTM via utmctl/UTM.app ..."
-  open "$UTM_APP"
-
-  for _ in $(seq 1 30); do
-    if utm_ready; then
-      return 0
-    fi
-    sleep 1
-  done
-
-  echo "UTM did not become ready for utmctl" >&2
-  exit 1
-}
-
-ensure_vm_registered() {
-  ensure_utm_running
-
-  if vm_registered; then
-    return 0
-  fi
-
-  echo "Restarting UTM so it picks up the new VM ..."
-  killall UTM 2>/dev/null || true
-  sleep 2
-  open "$UTM_APP"
-
-  for _ in $(seq 1 30); do
-    if utm_ready && vm_registered; then
-      return 0
-    fi
-    sleep 1
-  done
-
-  echo "UTM did not register VM '$VM_NAME'" >&2
-  exit 1
+  echo "WARNING: utmctl start failed."
+  echo "UTM/utmctl require an interactive GUI session for the same macOS user as UTM.app."
+  echo "Log in as $${UTM_RUN_AS:-the UTM owner} on the Mac console and run:"
+  echo "  $UTMCTL start $VM_NAME"
+  return 0
 }
 
 utm_network_mode() {
@@ -107,8 +87,7 @@ utm_network_mode() {
 }
 
 vm_exists() {
-  [ -d "$VM_DIR" ] && return 0
-  "$UTMCTL" list 2>/dev/null | awk -v name="$VM_NAME" '$1 == name { found=1 } END { exit !found }'
+  [ -d "$VM_DIR" ] && [ -f "$CONFIG_PLIST" ]
 }
 
 if vm_exists; then
@@ -186,21 +165,21 @@ VM_UUID="$(uuidgen)"
 MAC_ADDRESS="$(printf '52:54:00:%02x:%02x:%02x' $((RANDOM % 256)) $((RANDOM % 256)) $((RANDOM % 256)))"
 NETWORK_MODE_PLIST="$(utm_network_mode "$NETWORK_MODE")"
 
-mkdir -p "$${VM_DIR}/Data"
+run_utm_user mkdir -p "$${VM_DIR}/Data"
 
 SEED_FILE="$${VM_DIR}/Data/$${SEED_UUID}.iso"
 DISK_FILE="$${VM_DIR}/Data/$${DISK_UUID}.qcow2"
 
-cp "$SEED_ISO" "$SEED_FILE"
+run_utm_user cp "$SEED_ISO" "$SEED_FILE"
 
 QEMU_IMG="$(find_qemu_img || true)"
 if [ -n "$QEMU_IMG" ]; then
   echo "Preparing VM disk from cloud image with $QEMU_IMG ..."
-  "$QEMU_IMG" convert -O qcow2 "$IMAGE_PATH" "$DISK_FILE"
-  "$QEMU_IMG" resize "$DISK_FILE" "$${DISK_GB}G"
+  run_utm_user "$QEMU_IMG" convert -O qcow2 "$IMAGE_PATH" "$DISK_FILE"
+  run_utm_user "$QEMU_IMG" resize "$DISK_FILE" "$${DISK_GB}G"
 else
   echo "qemu-img not found, linking cloud image as VM disk ..."
-  ln -sf "$IMAGE_PATH" "$DISK_FILE"
+  run_utm_user ln -sf "$IMAGE_PATH" "$DISK_FILE"
 fi
 
 BRIDGE_INTERFACE_XML=""
@@ -210,7 +189,7 @@ if [ -n "$BRIDGE_INTERFACE" ]; then
 fi
 
 echo "Writing UTM config.plist for headless VM '$VM_NAME' ..."
-cat > "$CONFIG_PLIST" <<EOF
+run_utm_user tee "$CONFIG_PLIST" > /dev/null <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -308,9 +287,7 @@ EOF
 
 plutil -lint "$CONFIG_PLIST"
 
-ensure_vm_registered
-
-echo "Starting VM '$VM_NAME' with utmctl ..."
-"$UTMCTL" start "$VM_NAME"
+echo "UTM VM bundle: $VM_DIR"
+start_vm
 
 echo "Linux VM '$VM_NAME' created (static: $STATIC_IP)"
