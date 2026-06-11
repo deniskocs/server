@@ -45,8 +45,8 @@ else
 fi
 
 SEED_DIR="$(mktemp -d)"
-trap 'rm -rf "$SEED_DIR"' EXIT
 SEED_ISO="$SEED_DIR/cidata.iso"
+trap 'rm -rf "$SEED_DIR"' EXIT
 
 cat > "$SEED_DIR/user-data" <<EOF
 #cloud-config
@@ -100,23 +100,39 @@ create_seed_iso() {
 echo "Creating cloud-init seed ISO ..."
 create_seed_iso
 
-HEADLESS_CONFIG="displays:{}, serial ports:{}"
+APPLESCRIPT_FILE="$(mktemp).applescript"
+trap 'rm -rf "$SEED_DIR" "$APPLESCRIPT_FILE"' EXIT
+
+DISK_MIB=$((DISK_GB * 1024))
 
 if [ "$NETWORK_MODE" = "bridged" ] && [ -n "$BRIDGE_INTERFACE" ]; then
-  NETWORK_CONFIG="{{mode:bridged, host interface:\"$BRIDGE_INTERFACE\"}}"
-else
-  NETWORK_CONFIG="{{mode:$NETWORK_MODE}}"
-fi
-
-echo "Creating headless UTM VM '$VM_NAME' ..."
-osascript <<APPLESCRIPT
+  cat > "$APPLESCRIPT_FILE" <<APPLESCRIPT
 tell application "UTM"
   set diskPath to POSIX file "$IMAGE_PATH"
   set seedPath to POSIX file "$SEED_ISO"
-  set newVM to make new virtual machine with properties {backend:qemu, configuration:{name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$((DISK_GB * 1024))}}, network interfaces:{$NETWORK_CONFIG}, $HEADLESS_CONFIG}}
-  update configuration of newVM with {$HEADLESS_CONFIG}
+  set vmCfg to {name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$DISK_MIB}}, network interfaces:{{mode:bridged, host interface:"$BRIDGE_INTERFACE"}}, displays:{}, serial ports:{}}
+  set newVM to make new virtual machine with properties {backend:qemu, configuration:vmCfg}
+  tell newVM
+    update configuration with {displays:{}, serial ports:{}}
+  end tell
 end tell
 APPLESCRIPT
+else
+  cat > "$APPLESCRIPT_FILE" <<APPLESCRIPT
+tell application "UTM"
+  set diskPath to POSIX file "$IMAGE_PATH"
+  set seedPath to POSIX file "$SEED_ISO"
+  set vmCfg to {name:"$VM_NAME", notes:"Managed by Terraform infra/home (headless)", architecture:"aarch64", memory:$MEMORY_MB, cpu cores:$CPU_CORES, drives:{{removable:true, source:seedPath}, {source:diskPath, guest size:$DISK_MIB}}, network interfaces:{{mode:$NETWORK_MODE}}, displays:{}, serial ports:{}}
+  set newVM to make new virtual machine with properties {backend:qemu, configuration:vmCfg}
+  tell newVM
+    update configuration with {displays:{}, serial ports:{}}
+  end tell
+end tell
+APPLESCRIPT
+fi
+
+echo "Creating headless UTM VM '$VM_NAME' ..."
+osascript "$APPLESCRIPT_FILE"
 
 echo "Starting VM '$VM_NAME' ..."
 "$UTMCTL" start "$VM_NAME"
