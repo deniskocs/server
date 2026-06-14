@@ -1,4 +1,10 @@
-# Минимальный старт; ingress и domain — позже.
+# TLS terminates on Mac router (nginx). Traefik → argocd-server over HTTP.
+configs:
+  cm:
+    url: https://argo.chilik.net
+  params:
+    server.insecure: "true"
+
 server:
   service:
     type: ClusterIP
