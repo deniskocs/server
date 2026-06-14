@@ -4,6 +4,9 @@ link_chilik_certs() {
     ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/api.chilik.net.crt
     ln -sf /etc/letsencrypt/live/api.chilik.net/privkey.pem /etc/nginx/ssl/api.chilik.net.key
     ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/api.chilik.net.bundle.crt
+    ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/argo.chilik.net.crt
+    ln -sf /etc/letsencrypt/live/api.chilik.net/privkey.pem /etc/nginx/ssl/argo.chilik.net.key
+    ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/argo.chilik.net.bundle.crt
 }
 
 link_stage_certs() {
@@ -18,6 +21,34 @@ STAGE_CERT_DOMAINS=(
     tenant.stage.t-zone.org
     darlings.stage.t-zone.org
 )
+
+CHILIK_CERT_DOMAINS=(
+    api.chilik.net
+    learn-english.chilik.net
+    argo.chilik.net
+)
+
+check_chilik_cert_sans() {
+    local cert_path="/etc/letsencrypt/live/api.chilik.net/fullchain.pem"
+    local domain
+    local sans
+
+    if [ ! -f "$cert_path" ]; then
+        echo "No chilik.net certificate found"
+        return 1
+    fi
+
+    sans=$(openssl x509 -in "$cert_path" -noout -text)
+    for domain in "${CHILIK_CERT_DOMAINS[@]}"; do
+        if ! printf '%s' "$sans" | grep -Fq "DNS:${domain}"; then
+            echo "chilik.net certificate missing SAN: $domain"
+            return 1
+        fi
+    done
+
+    echo "chilik.net certificate covers all required SANs."
+    return 0
+}
 
 check_stage_cert_sans() {
     local cert_path="/etc/letsencrypt/live/stage.t-zone.org/fullchain.pem"
@@ -91,14 +122,17 @@ get_real_certs() {
        /etc/letsencrypt/archive/api.chilik.net \
        /etc/letsencrypt/renewal/api.chilik.net.conf
 
-    certbot certonly --webroot -w /var/www/certbot \
+    chilik_certbot_args=(certonly --webroot -w /var/www/certbot \
         --email deniskocs@gmail.com \
-        -d api.chilik.net \
-        -d learn-english.chilik.net \
+        --cert-name api.chilik.net \
         --rsa-key-size 4096 \
         --agree-tos \
         --force-renewal \
-        --non-interactive
+        --non-interactive)
+    for domain in "${CHILIK_CERT_DOMAINS[@]}"; do
+        chilik_certbot_args+=(-d "$domain")
+    done
+    certbot "${chilik_certbot_args[@]}"
 
     link_chilik_certs
 
@@ -129,6 +163,9 @@ mkdir -p /etc/nginx/ssl \
 
 certs_ok=true
 if ! check_cert_expiry api.chilik.net; then
+    certs_ok=false
+fi
+if ! check_chilik_cert_sans; then
     certs_ok=false
 fi
 if ! check_cert_expiry stage.t-zone.org; then
