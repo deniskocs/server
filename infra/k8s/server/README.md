@@ -15,6 +15,8 @@
 
 Локально: `kubectl kustomize infra/k8s/server --enable-helm` нужен **Helm** в `PATH`; в Argo CD Helm уже есть в `repo-server`.
 
+Namespace **`cert-manager`** задаётся явным манифестом (`namespace-cert-manager.yaml`, sync-wave `-10`): опция `CreateNamespace` у Application `server` относится только к `spec.destination.namespace`, а не к произвольным namespace из чарта.
+
 ### Let's Encrypt — не сразу
 
 ACME (Let’s Encrypt) имеет смысл подключать, когда:
