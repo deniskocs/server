@@ -1,0 +1,26 @@
+# Дочерний Argo CD Application: всё платформенное из репо server (ESO, Keycloak, …).
+# Манифесты — в infra/k8s/server/ (Kustomize). Создаётся корневым platform-root.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: server
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:deniskocs/server.git
+    targetRevision: main
+    path: infra/k8s/server
+    kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    # Для Kustomize с ресурсами в разных namespace это поле не подменяет metadata.namespace в манифестах.
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

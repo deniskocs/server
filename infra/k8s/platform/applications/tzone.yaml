@@ -1,5 +1,5 @@
-# Дочерний Argo CD Application (создаётся автоматически корневым app-of-apps).
-# Манифесты приложения tzone лежат в репозитории tzone (deploy/k8s).
+# Дочерний Argo CD Application (создаётся корневым platform-root вместе с server).
+# Манифесты приложения tzone — в репозитории tzone (deploy/k8s).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

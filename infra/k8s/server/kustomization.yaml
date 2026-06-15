@@ -1,0 +1,5 @@
+# Корень «серверного» стека в кластере (см. Argo CD Application server в platform/applications/).
+# Подключай сюда подкаталоги по мере появления (ESO, Keycloak, SecretStore и т.д.).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
