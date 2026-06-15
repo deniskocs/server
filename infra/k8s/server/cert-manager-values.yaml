@@ -1,0 +1,3 @@
+# Helm chart cert-manager (Jetstack). https://cert-manager.io/docs/installation/helm/
+crds:
+  enabled: true

@@ -1,5 +1,16 @@
 # Корень «серверного» стека в кластере (см. Argo CD Application server в platform/applications/).
-# Подключай сюда подкаталоги по мере появления (ESO, Keycloak, SecretStore и т.д.).
+# cert-manager — через Helm (helmCharts); в Application нужен kustomize.buildOptions: --enable-helm.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-resources: []
+
+helmCharts:
+  - name: cert-manager
+    repo: https://charts.jetstack.io
+    version: "v1.20.2"
+    releaseName: cert-manager
+    namespace: cert-manager
+    valuesFile: cert-manager-values.yaml
+    includeCRDs: true
+
+resources:
+  - clusterissuer-selfsigned.yaml
