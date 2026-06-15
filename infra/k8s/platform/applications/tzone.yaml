@@ -1,0 +1,24 @@
+# Дочерний Argo CD Application (создаётся автоматически корневым app-of-apps).
+# Манифесты приложения tzone лежат в репозитории tzone (deploy/k8s).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tzone
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:deniskocs/tzone.git
+    targetRevision: main
+    path: deploy/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tzone
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

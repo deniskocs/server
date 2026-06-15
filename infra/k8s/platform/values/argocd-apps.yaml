@@ -1,0 +1,28 @@
+# App-of-apps: корневой Argo CD Application.
+#
+# Следит за каталогом infra/k8s/platform/applications в этом репозитории (server)
+# и автоматически создаёт дочерние Application (tzone и будущие компоненты).
+# Бутстрапится Terraform-ом (helm_release argocd-apps). После этого новые
+# приложения добавляются просто файлом в applications/ — Argo CD подхватит сам.
+#
+# Требует: Argo CD должен иметь доступ к репозиторию server по SSH
+# (git@github.com:deniskocs/server.git), как и к tzone.
+applications:
+  platform-root:
+    namespace: argocd
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    project: default
+    source:
+      repoURL: git@github.com:deniskocs/server.git
+      targetRevision: main
+      path: infra/k8s/platform/applications
+      directory:
+        recurse: false
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: argocd
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
