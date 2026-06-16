@@ -13,9 +13,6 @@ spec:
     repoURL: git@github.com:deniskocs/server.git
     targetRevision: main
     path: infra/k8s/server
-    kustomize:
-      # helmCharts в kustomization.yaml (cert-manager и далее ESO и т.д.)
-      buildOptions: --enable-helm
   destination:
     server: https://kubernetes.default.svc
     # Для Kustomize с ресурсами в разных namespace это поле не подменяет metadata.namespace в манифестах.
