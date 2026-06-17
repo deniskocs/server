@@ -7,6 +7,8 @@
 
 Порядок применения при необходимости задаётся аннотациями sync-wave Argo CD (`argocd.argoproj.io/sync-wave`).
 
+Полная выжимка (вики в репозитории): [WIKI-README.md](../../../WIKI-README.md).
+
 ## cert-manager (Helm)
 
 Ставится через [helmCharts](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/helmcharts/) в `kustomization.yaml`, значения — `cert-manager-values.yaml` (`crds.enabled: true`).
