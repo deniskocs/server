@@ -1,5 +1,5 @@
 # Корень «серверного» стека в кластере (см. Argo CD Application server в platform/applications/).
-# cert-manager — через Helm (helmCharts); в Application нужен kustomize.buildOptions: --enable-helm.
+# cert-manager и external-secrets — через Helm (helmCharts); в Application нужен kustomize.buildOptions: --enable-helm.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -11,7 +11,15 @@ helmCharts:
     namespace: cert-manager
     valuesFile: cert-manager-values.yaml
     includeCRDs: true
+  - name: external-secrets
+    repo: https://charts.external-secrets.io
+    version: "2.6.0"
+    releaseName: external-secrets
+    namespace: external-secrets
+    valuesFile: external-secrets-values.yaml
+    includeCRDs: true
 
 resources:
   - namespace-cert-manager.yaml
+  - namespace-external-secrets.yaml
   - clusterissuer-selfsigned.yaml
