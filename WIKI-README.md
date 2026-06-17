@@ -119,5 +119,18 @@ infra/k8s/platform/applications/server.yaml
 | TLS внутри кластера | cert-manager + `ClusterIssuer` `selfsigned`; LE отложен до Ingress/DNS. |
 | Секреты для приложений | External Secrets Operator 2.6.0 в NS `external-secrets`; бэкенды подключаются отдельно. |
 | Bitwarden SM | Облако + опционально ESO-провайдер; SDK server выключен до готовности `bitwarden-tls-certs`. |
+| Argo sync ESO CRD | `ServerSideApply=true` в `Application` `server` (см. §10). |
 
-При смене версий chart или схемы bootstrap обновляй **§3–§6** и таблицу в **§9**.
+При смене версий chart или схемы bootstrap обновляй **§3–§6**, **§10** и таблицу в **§9**.
+
+---
+
+## 10. Argo CD: ошибка «metadata.annotations: Too long» на CRD ESO
+
+**Симптом:** при sync приложения `server` падает применение CRD `clustersecretstores.external-secrets.io` / `secretstores.external-secrets.io` с текстом вроде `metadata.annotations: Too long: may not be more than 262144 bytes`.
+
+**Причина:** у очень больших CRD client-side apply через Argo/kubectl накапливает данные в **annotations** и упирается в лимит Kubernetes **256 KiB** на весь объект `metadata.annotations`.
+
+**Что сделано:** в `infra/k8s/platform/applications/server.yaml` в `syncPolicy.syncOptions` добавлено **`ServerSideApply=true`** — синк идёт через server-side apply, без раздувания annotations тем же механизмом.
+
+**Если синк всё ещё падает:** проверь версию Argo CD (опция нужна с поддерживаемых релизов); запасной путь — ставить CRD ESO вне Argo (`kubectl apply --server-side -f …` из chart) и в `external-secrets-values.yaml` выставить `installCRDs: false`.
