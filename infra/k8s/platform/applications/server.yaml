@@ -9,6 +9,13 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
+  # Kubernetes ≥1.33 добавляет status.terminatingReplicas у Deployment; схема в Argo
+  # старше — падает diff «field not declared in schema». Игнорируем только это поле.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas
   source:
     repoURL: git@github.com:deniskocs/server.git
     targetRevision: main

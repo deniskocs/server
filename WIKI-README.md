@@ -119,7 +119,7 @@ infra/k8s/platform/applications/server.yaml
 | TLS внутри кластера | cert-manager + `ClusterIssuer` `selfsigned`; LE отложен до Ingress/DNS. |
 | Секреты для приложений | External Secrets Operator 2.6.0 в NS `external-secrets`; бэкенды подключаются отдельно. |
 | Bitwarden SM | Облако + опционально ESO-провайдер; SDK server выключен до готовности `bitwarden-tls-certs`. |
-| Argo sync ESO CRD | `ServerSideApply=true` в `Application` `server` (см. §10). |
+| Argo sync ESO CRD | `ServerSideApply=true` + `ignoreDifferences` для `Deployment.status.terminatingReplicas` (см. §10). |
 
 При смене версий chart или схемы bootstrap обновляй **§3–§6**, **§10** и таблицу в **§9**.
 
@@ -134,3 +134,13 @@ infra/k8s/platform/applications/server.yaml
 **Что сделано:** в `infra/k8s/platform/applications/server.yaml` в `syncPolicy.syncOptions` добавлено **`ServerSideApply=true`** — синк идёт через server-side apply, без раздувания annotations тем же механизмом.
 
 **Если синк всё ещё падает:** проверь версию Argo CD (опция нужна с поддерживаемых релизов); запасной путь — ставить CRD ESO вне Argo (`kubectl apply --server-side -f …` из chart) и в `external-secrets-values.yaml` выставить `installCRDs: false`.
+
+### Ошибка diff: `.status.terminatingReplicas: field not declared in schema`
+
+**Симптом:** в UI или при sync: `Failed to compare desired state to live state` / `structured merge diff` / `terminatingReplicas` не объявлено в схеме.
+
+**Причина:** в **новом Kubernetes** у `Deployment.status` появилось поле **`terminatingReplicas`**; встроенная OpenAPI-схема Argo CD (часто от более старого K8s) этого поля не знает — typed diff ломается.
+
+**Что сделано:** в `Application` `server` в **`spec.ignoreDifferences`** для `apps/Deployment` добавлен jsonPointer **`/status/terminatingReplicas`**.
+
+Долгосрочно полезно **обновить Argo CD** до версии с актуальной схемой под твой кластер.
