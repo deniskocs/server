@@ -23,3 +23,6 @@ resources:
   - namespace-cert-manager.yaml
   - namespace-external-secrets.yaml
   - clusterissuer-selfsigned.yaml
+  - certificate-bitwarden-root-ca.yaml
+  - issuer-bitwarden-internal-ca.yaml
+  - certificate-bitwarden-sdk-server-tls.yaml

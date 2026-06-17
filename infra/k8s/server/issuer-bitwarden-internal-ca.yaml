@@ -1,0 +1,11 @@
+# CA Issuer для листового сертификата bitwarden-sdk-server (нужен ca.crt в bitwarden-tls-certs).
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: bitwarden-internal-ca
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+spec:
+  ca:
+    secretName: bitwarden-internal-ca

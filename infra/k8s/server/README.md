@@ -38,11 +38,17 @@ ACME (Let’s Encrypt) имеет смысл подключать, когда:
 
 ### Bitwarden Secrets Manager + ESO
 
-Провайдер BSM в ESO опирается на подchart **`bitwarden-sdk-server`** (сейчас `enabled: false` в `external-secrets-values.yaml`). У сервера SDK **обязателен HTTPS**; в Secret `bitwarden-tls-certs` в namespace `external-secrets` должны быть ключи **`tls.crt`**, **`tls.key`** и **`ca.crt`** (см. [документацию провайдера](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/)).
+Подchart **`bitwarden-sdk-server`** включён (`external-secrets-values.yaml`); TLS для HTTPS выпускает **cert-manager** в namespace `external-secrets`:
 
-Надёжный способ получить `ca.crt` у листового сертификата — выпуск через **CA Issuer** в том же namespace (короткий CA из `ClusterIssuer` `selfsigned`, затем `Issuer` с `spec.ca.secretName`, затем `Certificate` для `bitwarden-sdk-server…svc`). После появления Secret включи `bitwarden-sdk-server.enabled: true` и задеплой; в `SecretStore` укажи `bitwardenServerSDKURL` на сервис chart (порт **9998**) и `caProvider` / `caBundle` на тот же CA.
+| Файл | Назначение |
+|------|------------|
+| `certificate-bitwarden-root-ca.yaml` | CA (`Certificate` `bitwarden-root-ca` → Secret **`bitwarden-internal-ca`**, wave `15`) |
+| `issuer-bitwarden-internal-ca.yaml` | **`Issuer`** CA, ссылается на тот Secret (wave `16`) |
+| `certificate-bitwarden-sdk-server-tls.yaml` | Листовой сертификат для `bitwarden-sdk-server…svc` → Secret **`bitwarden-tls-certs`** с `tls.crt`, `tls.key`, `ca.crt` (wave `17`) |
 
-Токен **machine account** Bitwarden по-прежнему создаётся вручную и кладётся в Kubernetes `Secret` (bootstrap вне git).
+У **Deployment** SDK аннотация **`argocd.argoproj.io/sync-wave: "20"`**, чтобы под стартовал после готовности Secret.
+
+В **`SecretStore`** / **`ClusterSecretStore`**: `bitwardenServerSDKURL: https://bitwarden-sdk-server.external-secrets.svc.cluster.local:9998`, `caProvider` (или `caBundle`) на Secret **`bitwarden-tls-certs`**, ключ **`ca.crt`**. Токен **machine account** — в отдельном K8s Secret, не в git ([документация провайдера](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/)).
 
 ## Bitwarden Secrets Manager (сервис вне кластера)
 
@@ -50,4 +56,4 @@ ACME (Let’s Encrypt) имеет смысл подключать, когда:
 
 Без синхронизации в Kubernetes секреты из BSM удобно забирать через CLI **`bws`** в CI или локально ([документация](https://bitwarden.com/help/secrets-manager/)); токен machine account — только в защищённом хранилище CI или в `kubectl create secret`, не в git.
 
-С **ESO** (см. выше) значения могут попадать в `Secret` в кластере через `ExternalSecret`, когда настроены store и (для BSM) `bitwarden-sdk-server` + TLS.
+С **ESO** (см. выше) значения могут попадать в `Secret` в кластере через `ExternalSecret`, когда настроены **SecretStore** с токеном machine account и (для BSM) **`bitwardenServerSDKURL`** на SDK.

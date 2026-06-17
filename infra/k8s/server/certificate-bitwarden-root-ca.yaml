@@ -1,0 +1,22 @@
+# Короткий CA в namespace external-secrets (подписан ClusterIssuer selfsigned).
+# Из Secret этого CA выпускается TLS для bitwarden-sdk-server; в Secret листа будет ca.crt.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bitwarden-root-ca
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  isCA: true
+  commonName: external-secrets-bitwarden-ca
+  secretName: bitwarden-internal-ca
+  duration: 87600h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io

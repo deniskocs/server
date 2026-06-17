@@ -1,0 +1,27 @@
+# Secret bitwarden-tls-certs: tls.crt, tls.key, ca.crt — ожидает chart bitwarden-sdk-server.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bitwarden-sdk-server-tls
+  namespace: external-secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: "17"
+spec:
+  secretName: bitwarden-tls-certs
+  duration: 8760h
+  renewBefore: 720h
+  commonName: bitwarden-sdk-server.external-secrets.svc.cluster.local
+  dnsNames:
+    - bitwarden-sdk-server
+    - bitwarden-sdk-server.external-secrets.svc.cluster.local
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  issuerRef:
+    name: bitwarden-internal-ca
+    kind: Issuer
+    group: cert-manager.io
