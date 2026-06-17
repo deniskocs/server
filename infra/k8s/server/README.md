@@ -63,7 +63,7 @@ kubectl create secret generic bitwarden-access-token \
 ### Bitwarden: проект tzone в репозитории
 
 - **`secretstore-bitwarden-tzone.yaml`** — `SecretStore` `bitwarden-tzone` (org/project из Bitwarden US cloud; EU — поменяй `apiURL` / `identityURL`).
-- **`external-secret-bitwarden-tzone.yaml`** — тянет один ключ в Secret **`tzone-sm-secrets`**; в **`remoteRef.key`** вместо плейсхолдера **`change-me`** укажи **имя секрета** в BSM или **UUID** ([дока](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/)). Пока значение неверное, `ExternalSecret` будет в ошибке — это ожидаемо.
+- **`external-secret-bitwarden-tzone.yaml`** — тянет один ключ в Secret **`tzone-sm-secrets`**. В **`remoteRef.key`** — имя или UUID секрета в BSM. Если **key — не UUID**, по [доке ESO](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) обязателен **`remoteRef.property`** = **project ID** (как в `SecretStore`); для поиска **по UUID** секрета `property` не указывай.
 
 Проверка store: `kubectl describe secretstore bitwarden-tzone -n external-secrets`.
 
