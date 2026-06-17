@@ -50,6 +50,23 @@ ACME (Let’s Encrypt) имеет смысл подключать, когда:
 
 В **`SecretStore`** / **`ClusterSecretStore`**: `bitwardenServerSDKURL: https://bitwarden-sdk-server.external-secrets.svc.cluster.local:9998`, `caProvider` (или `caBundle`) на Secret **`bitwarden-tls-certs`**, ключ **`ca.crt`**. Токен **machine account** — в отдельном K8s Secret, не в git ([документация провайдера](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/)).
 
+**Bootstrap токена** (один раз, вне git; вместо `…` подставь access token из Bitwarden → Machine account → Access tokens):
+
+```bash
+kubectl create secret generic bitwarden-access-token \
+  -n external-secrets \
+  --from-literal=token='…'
+```
+
+В `SecretStore` обычно указывают `auth.secretRef.credentials.name: bitwarden-access-token` и `key: token` (как в примерах ESO для Bitwarden).
+
+### Bitwarden: проект tzone в репозитории
+
+- **`secretstore-bitwarden-tzone.yaml`** — `SecretStore` `bitwarden-tzone` (org/project из Bitwarden US cloud; EU — поменяй `apiURL` / `identityURL`).
+- **`external-secret-bitwarden-tzone.yaml`** — тянет один ключ в Secret **`tzone-sm-secrets`**; в **`remoteRef.key`** вместо плейсхолдера **`change-me`** укажи **имя секрета** в BSM или **UUID** ([дока](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/)). Пока значение неверное, `ExternalSecret` будет в ошибке — это ожидаемо.
+
+Проверка store: `kubectl describe secretstore bitwarden-tzone -n external-secrets`.
+
 ## Bitwarden Secrets Manager (сервис вне кластера)
 
 **Bitwarden Secrets Manager** — это **облачный API и веб-консоль** Bitwarden. Отдельного деплоя «сервера BSM» в этом каталоге нет.
