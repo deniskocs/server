@@ -119,7 +119,7 @@ infra/k8s/platform/applications/server.yaml
 | TLS внутри кластера | cert-manager + `ClusterIssuer` `selfsigned`; LE отложен до Ingress/DNS. |
 | Секреты для приложений | External Secrets Operator 2.6.0 в NS `external-secrets`; бэкенды подключаются отдельно. |
 | Bitwarden SM | Облако + опционально ESO-провайдер; SDK server выключен до готовности `bitwarden-tls-certs`. |
-| Argo sync ESO CRD | `ServerSideApply=true` + `ignoreDifferences` для `Deployment.status.terminatingReplicas` (см. §10). |
+| Argo sync ESO CRD | `ServerSideApply=true` + аннотация `compare-options: ServerSideDiff=true` на `Application` `server` (см. §10). |
 
 При смене версий chart или схемы bootstrap обновляй **§3–§6**, **§10** и таблицу в **§9**.
 
@@ -139,8 +139,12 @@ infra/k8s/platform/applications/server.yaml
 
 **Симптом:** в UI или при sync: `Failed to compare desired state to live state` / `structured merge diff` / `terminatingReplicas` не объявлено в схеме.
 
-**Причина:** в **новом Kubernetes** у `Deployment.status` появилось поле **`terminatingReplicas`**; встроенная OpenAPI-схема Argo CD (часто от более старого K8s) этого поля не знает — typed diff ломается.
+**Причина:** при **`ServerSideApply=true`** Argo по умолчанию использует **structured-merge diff** и **встроенную** OpenAPI-схему (часто старше твоего API-сервера). У `Deployment.status` в новом Kubernetes есть поля, которых нет в этой схеме (например **`terminatingReplicas`**) — разбор live-объекта падает с `field not declared in schema`.
 
-**Что сделано:** в `Application` `server` в **`spec.ignoreDifferences`** для `apps/Deployment` добавлен jsonPointer **`/status/terminatingReplicas`**.
+**Правильный обход (не костыль):** аннотация на `Application` **`server`**: **`argocd.argoproj.io/compare-options: ServerSideDiff=true`** — сравнение через server-side diff вместо structured-merge при SSA, см. [Diff strategies](https://argo-cd.readthedocs.io/en/stable/user-guide/diff-strategies/). Это ровно тот сценарий, для которого Argo выделил отдельную стратегию.
 
-Долгосрочно полезно **обновить Argo CD** до версии с актуальной схемой под твой кластер.
+**Долгосрочно:** обновлять Argo CD до версии с актуальной схемой под твой Kubernetes — тогда меньше расхождений с API в целом.
+
+**Не рекомендуется** маскировать это через `ignoreDifferences` по полям status: это скрывает симптомы и не чинит несовпадение схемы для structured-merge.
+
+**Если с `ServerSideDiff` появятся другие ошибки** (редко — баги dry-run на экзотических CR): обнови Argo CD до свежего патча или обсуждай fallback с командой.

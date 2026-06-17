@@ -5,17 +5,15 @@ kind: Application
 metadata:
   name: server
   namespace: argocd
+  annotations:
+    # При syncOptions ServerSideApply Argo по умолчанию считает diff через structured-merge
+    # и вшитую OpenAPI-схему — она отстаёт от API кластера (напр. status.terminatingReplicas).
+    # ServerSideDiff сравнивает через SSA dry-run и убирает ComparisonError на diff.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  # Kubernetes ≥1.33 добавляет status.terminatingReplicas у Deployment; схема в Argo
-  # старше — падает diff «field not declared in schema». Игнорируем только это поле.
-  ignoreDifferences:
-    - group: apps
-      kind: Deployment
-      jsonPointers:
-        - /status/terminatingReplicas
   source:
     repoURL: git@github.com:deniskocs/server.git
     targetRevision: main
