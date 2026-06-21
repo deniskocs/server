@@ -115,4 +115,4 @@ kubectl port-forward --address 0.0.0.0 svc/keycloak 8080:80 -n keycloak
 
 ### Realm `tzone`
 
-Chart поднимает пустой Keycloak (realm `master`). Realm **`tzone`** — из `tzone/services/keycloak/infra/realm/tzone-realm.json`: импорт через Admin Console или отдельным шагом, когда будут client secrets в Bitwarden.
+**Не в этом репозитории.** Server ставит только платформенный Keycloak (Helm + секреты). Декларативный realm, clients и dev-user — Argo CD Application **`tzone`**, каталог `tzone/deploy/k8s/keycloak/` (источник: `services/keycloak/infra/realm/tzone-realm.json`).
