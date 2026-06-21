@@ -1,10 +1,12 @@
 FROM ubuntu
-RUN apt-get update
-RUN apt-get install nginx -y
-RUN apt-get install -y openssl
-RUN apt-get install -y curl
-RUN apt-get install -y ca-certificates
-RUN apt-get install -y certbot
+RUN apt-get update && apt-get install -y \
+    nginx \
+    libnginx-mod-stream \
+    openssl \
+    curl \
+    ca-certificates \
+    certbot \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /etc/nginx/sites-enabled/default
 
