@@ -1,0 +1,36 @@
+# Эквивалент:
+#   helm install keycloak bitnami/keycloak -n keycloak \
+#     --set auth.adminUser=admin \
+#     --set auth.adminPassword=admin123 \
+#     --set postgresql.auth.postgresPassword=postgres123 \
+#     --set postgresql.auth.password=keycloak123 \
+#     --set postgresql.auth.database=keycloak
+#
+# Пароли здесь — dev/bootstrap; для production перевести на auth.existingSecret + Bitwarden ESO.
+
+auth:
+  adminUser: admin
+  adminPassword: admin123
+
+httpEnabled: true
+
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/keycloak
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: postgres123
+    password: keycloak123
+    database: keycloak
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+
+commonAnnotations:
+  argocd.argoproj.io/sync-wave: "1"

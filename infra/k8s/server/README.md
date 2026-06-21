@@ -74,3 +74,47 @@ kubectl create secret generic bitwarden-access-token \
 Без синхронизации в Kubernetes секреты из BSM удобно забирать через CLI **`bws`** в CI или локально ([документация](https://bitwarden.com/help/secrets-manager/)); токен machine account — только в защищённом хранилище CI или в `kubectl create secret`, не в git.
 
 С **ESO** (см. выше) значения могут попадать в `Secret` в кластере через `ExternalSecret`, когда настроены **SecretStore** с токеном machine account и (для BSM) **`bitwardenServerSDKURL`** на SDK.
+
+## Keycloak (Helm)
+
+Один release `bitnami/keycloak` в `kustomization.yaml` (PostgreSQL — subchart), values — `keycloak-values.yaml`.
+
+Эквивалент ручной установки:
+
+```bash
+kubectl create namespace keycloak
+
+helm install keycloak bitnami/keycloak \
+  --namespace keycloak \
+  --set auth.adminUser=admin \
+  --set auth.adminPassword=admin123 \
+  --set postgresql.auth.postgresPassword=postgres123 \
+  --set postgresql.auth.password=keycloak123 \
+  --set postgresql.auth.database=keycloak
+```
+
+Через Argo CD namespace создаётся `namespace-keycloak.yaml` (sync-wave `-10`); chart — sync-wave `1`.
+
+Проверка:
+
+```bash
+kubectl get pods -n keycloak
+```
+
+Локально (Admin Console):
+
+```bash
+kubectl port-forward svc/keycloak 8080:80 -n keycloak
+```
+
+→ http://localhost:8080 — логин `admin` / `admin123`.
+
+Внутри кластера: `http://keycloak.keycloak.svc.cluster.local:80`.
+
+Образы — `bitnamilegacy/*` (free Bitnami images переехали из `bitnami/*`).
+
+Пароли в values — dev/bootstrap; для production — `auth.existingSecret` и **ExternalSecret** + Bitwarden.
+
+### Realm `tzone`
+
+Chart поднимает пустой Keycloak (realm `master`). Realm **`tzone`** — из `tzone/services/keycloak/infra/realm/tzone-realm.json`: импорт через Admin Console или отдельным шагом, когда будут client secrets из Bitwarden.

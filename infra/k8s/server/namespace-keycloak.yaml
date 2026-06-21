@@ -1,0 +1,7 @@
+# Namespace для Keycloak (IdP TZone). См. infra/k8s/server/keycloak.yaml.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"

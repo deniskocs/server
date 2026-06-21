@@ -18,10 +18,17 @@ helmCharts:
     namespace: external-secrets
     valuesFile: external-secrets-values.yaml
     includeCRDs: true
+  - name: keycloak
+    repo: oci://registry-1.docker.io/bitnamicharts
+    version: "25.4.0"
+    releaseName: keycloak
+    namespace: keycloak
+    valuesFile: keycloak-values.yaml
 
 resources:
   - namespace-cert-manager.yaml
   - namespace-external-secrets.yaml
+  - namespace-keycloak.yaml
   - clusterissuer-selfsigned.yaml
   - certificate-bitwarden-root-ca.yaml
   - issuer-bitwarden-internal-ca.yaml
