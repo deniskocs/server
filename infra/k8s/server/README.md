@@ -62,10 +62,11 @@ kubectl create secret generic bitwarden-access-token \
 
 ### Bitwarden: проект tzone в репозитории
 
-- **`secretstore-bitwarden-tzone.yaml`** — `SecretStore` `bitwarden-tzone` (org/project из Bitwarden US cloud; EU — поменяй `apiURL` / `identityURL`).
-- **`external-secret-bitwarden-tzone.yaml`** — тянет один ключ в Secret **`tzone-sm-secrets`**. В **`remoteRef.key`** — имя или UUID секрета в BSM. Если **key — не UUID**, по [доке ESO](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) обязателен **`remoteRef.property`** = **project ID** (как в `SecretStore`); для поиска **по UUID** секрета `property` не указывай.
+- **`secretstore-bitwarden-tzone.yaml`** — namespaced `SecretStore` (legacy пример в `external-secrets`).
+- **`clustersecretstore-bitwarden-tzone.yaml`** — **`ClusterSecretStore`** с тем же org/project; токен и CA в namespace `external-secrets` — для `ExternalSecret` в любом namespace (Keycloak и др.).
+- **`external-secret-bitwarden-tzone.yaml`** — пример: тянет один ключ в Secret **`tzone-sm-secrets`**. В **`remoteRef.key`** — имя или UUID секрета в BSM. Если **key — не UUID**, по [доке ESO](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) обязателен **`remoteRef.property`** = **project ID** (как в `SecretStore`); для поиска **по UUID** секрета `property` не указывай.
 
-Проверка store: `kubectl describe secretstore bitwarden-tzone -n external-secrets`.
+Проверка store: `kubectl describe clustersecretstore bitwarden-tzone`.
 
 ## Bitwarden Secrets Manager (сервис вне кластера)
 
@@ -79,42 +80,39 @@ kubectl create secret generic bitwarden-access-token \
 
 Один release `bitnami/keycloak` в `kustomization.yaml` (PostgreSQL — subchart), values — `keycloak-values.yaml`.
 
-Эквивалент ручной установки:
+Пароли **не в git** — `ExternalSecret` **`external-secret-keycloak.yaml`** тянет из Bitwarden в Secret **`keycloak-secrets`** (namespace `keycloak`, sync-wave `2`). Chart Keycloak — sync-wave `3`.
+
+### Секреты в Bitwarden (проект tzone)
+
+Создайте в [Bitwarden Secrets Manager](https://vault.bitwarden.com) два секрета (имена **точно** такие):
+
+| Имя в BSM | Ключ в K8s Secret | Назначение |
+|-----------|-------------------|------------|
+| `keycloak-admin-password` | `admin-password` | Admin Console (`auth.adminUser=admin`) |
+| `keycloak-db-password` | `password`, `postgres-password` | PostgreSQL + пользователь БД `keycloak` |
+
+Можно перенести значения из GitHub secrets staging: `TZONE_STAGING_KEYCLOAK_ADMIN_PASSWORD`, `TZONE_STAGING_KEYCLOAK_DB_PASSWORD`.
+
+Проверка после sync:
 
 ```bash
-kubectl create namespace keycloak
-
-helm install keycloak bitnami/keycloak \
-  --namespace keycloak \
-  --set auth.adminUser=admin \
-  --set auth.adminPassword=admin123 \
-  --set postgresql.auth.postgresPassword=postgres123 \
-  --set postgresql.auth.password=keycloak123 \
-  --set postgresql.auth.database=keycloak
+kubectl describe externalsecret keycloak -n keycloak
+kubectl get secret keycloak-secrets -n keycloak
 ```
 
-Через Argo CD namespace создаётся `namespace-keycloak.yaml` (sync-wave `-10`); chart — sync-wave `1`.
-
-Проверка:
+### Доступ к Admin Console
 
 ```bash
 kubectl get pods -n keycloak
+kubectl port-forward --address 0.0.0.0 svc/keycloak 8080:80 -n keycloak
 ```
 
-Локально (Admin Console):
-
-```bash
-kubectl port-forward svc/keycloak 8080:80 -n keycloak
-```
-
-→ http://localhost:8080 — логин `admin` / `admin123`.
+→ http://localhost:8080 (или IP мастер-ноды:8080) — логин `admin`, пароль из Bitwarden.
 
 Внутри кластера: `http://keycloak.keycloak.svc.cluster.local:80`.
 
 Образы — `bitnamilegacy/*` (free Bitnami images переехали из `bitnami/*`).
 
-Пароли в values — dev/bootstrap; для production — `auth.existingSecret` и **ExternalSecret** + Bitwarden.
-
 ### Realm `tzone`
 
-Chart поднимает пустой Keycloak (realm `master`). Realm **`tzone`** — из `tzone/services/keycloak/infra/realm/tzone-realm.json`: импорт через Admin Console или отдельным шагом, когда будут client secrets из Bitwarden.
+Chart поднимает пустой Keycloak (realm `master`). Realm **`tzone`** — из `tzone/services/keycloak/infra/realm/tzone-realm.json`: импорт через Admin Console или отдельным шагом, когда будут client secrets в Bitwarden.
