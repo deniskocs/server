@@ -1,4 +1,5 @@
-# TLS terminates on Mac router (nginx). Traefik → argocd-server over HTTP.
+# TLS: argo.chilik.net — Mac router (certbot); argo.stage.t-zone.org — cert-manager (Ingress argocd-server-stage).
+# Канонический URL Argo (редиректы UI) — chilik; stage — тот же UI, альтернативный вход.
 configs:
   cm:
     url: https://argo.chilik.net

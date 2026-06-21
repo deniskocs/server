@@ -1,0 +1,17 @@
+# Let's Encrypt production, HTTP-01 через Traefik Ingress.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: deniskocs@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik

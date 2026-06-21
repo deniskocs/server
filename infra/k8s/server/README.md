@@ -19,14 +19,31 @@
 
 Namespace **`cert-manager`** задаётся явным манифестом (`namespace-cert-manager.yaml`, sync-wave `-10`): опция `CreateNamespace` у Application `server` относится только к `spec.destination.namespace`, а не к произвольным namespace из чарта.
 
-### Let's Encrypt — не сразу
+### Let's Encrypt (TZone staging)
 
-ACME (Let’s Encrypt) имеет смысл подключать, когда:
+Публичный TLS для staging — **cert-manager HTTP-01** (как **certbot webroot** на router): challenge на `:80` → nginx Mac → Traefik → solver Ingress.
 
-- есть **Ingress** (или Gateway), который реально принимает трафик с интернета на нужный домен;
-- выбран способ challenge: **HTTP-01** (доступен порт 80 к solver) или **DNS-01** (например IAM + Route53, если зона в AWS).
+| Файл | Назначение |
+|------|------------|
+| `clusterissuer-letsencrypt-prod.yaml` | Let's Encrypt (HTTP-01) |
+| `helmchartconfig-traefik.yaml` | Traefik `:443` на ноде |
 
-Пока TLS только на **Mac/nginx** снаружи кластера — LE внутри кластера не обязателен: сначала cert-manager + `selfsigned` / свой CA для внутренних нужд; **ClusterIssuer** с `acme` добавь отдельным манифестом, когда будешь готов (часто начинают со **staging** Let’s Encrypt, чтобы не упираться в rate limits).
+**AWS / Route53 не нужны** — DNS-01 только для wildcard `*.stage` без перечисления хостов.
+
+**tzone repo:** `certificate-stage-t-zone-org.yaml` (явные SAN: stage, auth, tenant, darlings, argo) + Ingress `websecure`. Argo CD также на `argo.chilik.net` (TLS certbot на router).
+
+**Router:** `stream :443` SNI → k3s для t-zone; на `:80` `/.well-known/acme-challenge/` для t-zone → `10.0.0.2:80`.
+
+Новый тенант `{name}.stage.t-zone.org` → добавить в `dnsNames` Certificate и в `tls.hosts` Ingress, `argocd app sync tzone`.
+
+### Let's Encrypt — общие заметки
+
+ACME (Let’s Encrypt) требует:
+
+- **Ingress** (или Gateway), принимающий трафик на домен;
+- challenge: **HTTP-01** (порт 80 к solver) или **DNS-01** (Route53 для wildcard `*.stage`).
+
+Пока TLS только на **Mac/nginx** для **chilik.net** — certbot webroot остаётся. Внутренние сертификаты — `selfsigned` / CA Bitwarden SDK.
 
 ## External Secrets Operator (Helm)
 

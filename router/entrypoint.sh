@@ -9,19 +9,6 @@ link_chilik_certs() {
     ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/argo.chilik.net.bundle.crt
 }
 
-link_stage_certs() {
-    ln -sf /etc/letsencrypt/live/stage.t-zone.org/fullchain.pem /etc/nginx/ssl/stage.t-zone.org.crt
-    ln -sf /etc/letsencrypt/live/stage.t-zone.org/privkey.pem /etc/nginx/ssl/stage.t-zone.org.key
-    ln -sf /etc/letsencrypt/live/stage.t-zone.org/fullchain.pem /etc/nginx/ssl/stage.t-zone.org.bundle.crt
-}
-
-STAGE_CERT_DOMAINS=(
-    stage.t-zone.org
-    auth.stage.t-zone.org
-    tenant.stage.t-zone.org
-    darlings.stage.t-zone.org
-)
-
 CHILIK_CERT_DOMAINS=(
     api.chilik.net
     learn-english.chilik.net
@@ -47,28 +34,6 @@ check_chilik_cert_sans() {
     done
 
     echo "chilik.net certificate covers all required SANs."
-    return 0
-}
-
-check_stage_cert_sans() {
-    local cert_path="/etc/letsencrypt/live/stage.t-zone.org/fullchain.pem"
-    local domain
-    local sans
-
-    if [ ! -f "$cert_path" ]; then
-        echo "No staging certificate found"
-        return 1
-    fi
-
-    sans=$(openssl x509 -in "$cert_path" -noout -text)
-    for domain in "${STAGE_CERT_DOMAINS[@]}"; do
-        if ! printf '%s' "$sans" | grep -Fq "DNS:${domain}"; then
-            echo "Staging certificate missing SAN: $domain"
-            return 1
-        fi
-    done
-
-    echo "Staging certificate covers all required SANs."
     return 0
 }
 
@@ -106,13 +71,7 @@ create_dummy_certs() {
         -out /etc/letsencrypt/live/api.chilik.net/fullchain.pem \
         -subj '/CN=api.chilik.net'
 
-    openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
-        -keyout /etc/letsencrypt/live/stage.t-zone.org/privkey.pem \
-        -out /etc/letsencrypt/live/stage.t-zone.org/fullchain.pem \
-        -subj '/CN=stage.t-zone.org'
-
     link_chilik_certs
-    link_stage_certs
 }
 
 get_real_certs() {
@@ -135,31 +94,13 @@ get_real_certs() {
     certbot "${chilik_certbot_args[@]}"
 
     link_chilik_certs
-
-    echo "Getting real certificates for TZone staging..."
-
-    rm -rf /etc/letsencrypt/live/stage.t-zone.org \
-       /etc/letsencrypt/archive/stage.t-zone.org \
-       /etc/letsencrypt/renewal/stage.t-zone.org.conf
-
-    stage_certbot_args=(certonly --webroot -w /var/www/certbot \
-        --email deniskocs@gmail.com \
-        --cert-name stage.t-zone.org \
-        --rsa-key-size 4096 \
-        --agree-tos \
-        --force-renewal \
-        --non-interactive)
-    for domain in "${STAGE_CERT_DOMAINS[@]}"; do
-        stage_certbot_args+=(-d "$domain")
-    done
-    certbot "${stage_certbot_args[@]}"
-
-    link_stage_certs
 }
 
 mkdir -p /etc/nginx/ssl \
-         /etc/letsencrypt/live/api.chilik.net \
-         /etc/letsencrypt/live/stage.t-zone.org
+         /etc/letsencrypt/live/api.chilik.net
+
+# TZone staging (*.stage.t-zone.org): TLS в k3s (cert-manager + Traefik).
+# Router: stream :443 → 10.0.0.2:443 для SNI *.t-zone.org / stage.t-zone.org.
 
 certs_ok=true
 if ! check_cert_expiry api.chilik.net; then
@@ -168,17 +109,10 @@ fi
 if ! check_chilik_cert_sans; then
     certs_ok=false
 fi
-if ! check_cert_expiry stage.t-zone.org; then
-    certs_ok=false
-fi
-if ! check_stage_cert_sans; then
-    certs_ok=false
-fi
 
 if [ "$certs_ok" = true ]; then
     echo "Certificates are valid. Skipping renewal."
     link_chilik_certs
-    link_stage_certs
     nginx -g "daemon off;"
 else
     echo "Certificates missing or expiring soon — proceeding with renewal."

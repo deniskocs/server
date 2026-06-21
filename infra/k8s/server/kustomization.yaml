@@ -30,6 +30,8 @@ resources:
   - namespace-external-secrets.yaml
   - namespace-keycloak.yaml
   - clusterissuer-selfsigned.yaml
+  - clusterissuer-letsencrypt-prod.yaml
+  - helmchartconfig-traefik.yaml
   - certificate-bitwarden-root-ca.yaml
   - issuer-bitwarden-internal-ca.yaml
   - certificate-bitwarden-sdk-server-tls.yaml
