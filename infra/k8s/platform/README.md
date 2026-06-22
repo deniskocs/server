@@ -59,6 +59,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 - `argocd-apps.tf` + `values/argocd-apps.yaml` — корневой `Application` (`platform-root`), который следит за каталогом `applications/` в репозитории `server`;
 - `applications/*.yaml` — дочерние `Application` только верхнего уровня:
   - **`tzone`** — манифесты из репозитория `tzone` (`deploy/k8s`);
+  - **`learn-english`** — манифесты из репозитория `learn-english-backend` (`infra/k8s`);
   - **`server`** — всё платформенное из этого репозитория (`infra/k8s/server`, Kustomize).
 
 После `terraform apply` корневой app создаётся автоматически и подтягивает всё из `applications/`. **Добавить новое приложение** = положить новый `Application`-манифест в `applications/`, закоммитить и запушить — Argo CD создаст его сам, без `kubectl apply` и без `terraform apply`.

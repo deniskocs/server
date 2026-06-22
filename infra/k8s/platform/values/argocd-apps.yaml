@@ -1,7 +1,8 @@
 # App-of-apps: корневой Argo CD Application.
 #
 # Следит за каталогом infra/k8s/platform/applications в этом репозитории (server)
-# и автоматически создаёт дочерние Application: tzone (репо tzone) + server (репо server, infra/k8s/server).
+# и автоматически создаёт дочерние Application: tzone (репо tzone) + server (репо server, infra/k8s/server)
+# + learn-english (репо learn-english-backend, infra/k8s).
 # Бутстрапится Terraform-ом (helm_release argocd-apps). После этого новые
 # приложения добавляются просто файлом в applications/ — Argo CD подхватит сам.
 #

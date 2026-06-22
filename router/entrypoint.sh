@@ -4,15 +4,11 @@ link_chilik_certs() {
     ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/api.chilik.net.crt
     ln -sf /etc/letsencrypt/live/api.chilik.net/privkey.pem /etc/nginx/ssl/api.chilik.net.key
     ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/api.chilik.net.bundle.crt
-    ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/argo.chilik.net.crt
-    ln -sf /etc/letsencrypt/live/api.chilik.net/privkey.pem /etc/nginx/ssl/argo.chilik.net.key
-    ln -sf /etc/letsencrypt/live/api.chilik.net/fullchain.pem /etc/nginx/ssl/argo.chilik.net.bundle.crt
 }
 
 CHILIK_CERT_DOMAINS=(
     api.chilik.net
     learn-english.chilik.net
-    argo.chilik.net
 )
 
 check_chilik_cert_sans() {

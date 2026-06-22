@@ -1,8 +1,7 @@
-# TLS: argo.chilik.net — Mac router (certbot); argo.stage.t-zone.org — cert-manager (Ingress argocd-server-stage).
-# Канонический URL Argo (редиректы UI) — chilik; stage — тот же UI, альтернативный вход.
+# Argo CD: argo.stage.t-zone.org — cert-manager + Traefik websecure.
 configs:
   cm:
-    url: https://argo.chilik.net
+    url: https://argo.stage.t-zone.org
     # Kustomize helmCharts (cert-manager, ESO, …) require helm inflation — see server Application path infra/k8s/server.
     kustomize.buildOptions: --enable-helm
   params:
