@@ -5,7 +5,7 @@
 
 Не путать с:
 
-- `infra/terraform` — bootstrap S3 bucket для remote state;
+- `infra/bootstrap-s3-state` — bootstrap S3 bucket для remote state;
 - `infra/k8s/` — Kubernetes / Argo CD;
 - `tzone/infra/terraform` — продукт TZone (`t-zone.org`, SES, media и т.д.).
 

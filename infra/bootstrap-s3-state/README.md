@@ -25,7 +25,7 @@ export AWS_DEFAULT_REGION='us-east-1'
 Создаёт bucket `server-terraform-state-<AWS_ACCOUNT_ID>`:
 
 ```bash
-cd infra/terraform
+cd infra/bootstrap-s3-state
 terraform init
 terraform plan
 terraform apply

@@ -12,7 +12,7 @@ terraform {
     }
   }
 
-  # Remote state — после bootstrap (server/infra/terraform), раскомментировать и подставить bucket:
+  # Remote state — после bootstrap (server/infra/bootstrap-s3-state), раскомментировать и подставить bucket:
   backend "s3" {
     bucket = "deniskocs-terraform-states"
     key    = "k8s/platform/terraform.tfstate"
