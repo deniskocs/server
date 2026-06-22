@@ -8,7 +8,6 @@ link_chilik_certs() {
 
 CHILIK_CERT_DOMAINS=(
     api.chilik.net
-    learn-english.chilik.net
 )
 
 check_chilik_cert_sans() {
