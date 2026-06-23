@@ -1,0 +1,27 @@
+# keycloak.chilik.net — TLS в k3s (cert-manager), SNI passthrough Mac → Traefik :443.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "21"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - secretName: keycloak-chilik-net-tls
+      hosts:
+        - keycloak.chilik.net
+  rules:
+    - host: keycloak.chilik.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 80

@@ -7,6 +7,11 @@ auth:
 
 httpEnabled: true
 
+# Публичный доступ: keycloak.chilik.net (Ingress + cert-manager в keycloak/).
+proxy: edge
+production: true
+hostname: keycloak.chilik.net
+
 global:
   security:
     allowInsecureImages: true

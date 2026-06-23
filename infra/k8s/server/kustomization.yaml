@@ -37,4 +37,5 @@ resources:
   - certificate-bitwarden-sdk-server-tls.yaml
   - bitwarden/
   - argocd/
+  - keycloak/
   - external-secret-keycloak.yaml

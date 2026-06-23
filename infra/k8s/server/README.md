@@ -32,7 +32,7 @@ Namespace **`cert-manager`** задаётся явным манифестом (`
 
 **tzone repo:** `certificate-stage-t-zone-org.yaml` (SAN: stage, auth, tenant, darlings) + Ingress `websecure`.
 
-**server repo:** `argocd/certificate-argo-chilik-net.yaml` + `argocd/ingress-argocd.yaml` — Argo CD UI `argo.chilik.net` (домашний кластер, как learn-english).
+**server repo:** `argocd/` — Argo CD `argo.chilik.net`; `keycloak/` — Keycloak `keycloak.chilik.net` (cert-manager + Ingress `websecure`, как learn-english).
 
 **Router:** `stream :443` SNI → k3s для t-zone; на `:80` `/.well-known/acme-challenge/` для t-zone → `10.0.0.2:80`.
 
@@ -122,16 +122,20 @@ kubectl describe externalsecret keycloak -n keycloak
 kubectl get secret keycloak-secrets -n keycloak
 ```
 
-### Доступ к Admin Console
+### Доступ
+
+| Куда | URL |
+|------|-----|
+| Admin Console (снаружи) | https://keycloak.chilik.net — Ingress `keycloak/ingress-keycloak.yaml`, `hostname` в `keycloak-values.yaml` |
+| Внутри кластера | `http://keycloak.keycloak.svc.cluster.local:80` |
+
+Логин `admin`, пароль из Bitwarden (`keycloak-admin-password`).
+
+Локально без Ingress:
 
 ```bash
-kubectl get pods -n keycloak
-kubectl port-forward --address 0.0.0.0 svc/keycloak 8080:80 -n keycloak
+kubectl port-forward svc/keycloak 8080:80 -n keycloak
 ```
-
-→ http://localhost:8080 (или IP мастер-ноды:8080) — логин `admin`, пароль из Bitwarden.
-
-Внутри кластера: `http://keycloak.keycloak.svc.cluster.local:80`.
 
 Образы — `bitnamilegacy/*` (free Bitnami images переехали из `bitnami/*`).
 
