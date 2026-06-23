@@ -1,10 +1,10 @@
 # App-of-apps: корневой Argo CD Application.
 #
 # platform-root следит за infra/k8s/platform/applications в этом репозитории (server):
-# tzone и server. Другие продуктовые репозитории подключаются к Argo CD сами
-# (манифест Application в своём репо, одноразовый kubectl apply).
+# только Application server (platform k8s). Продуктовые репозитории подключаются
+# к Argo CD сами (манифест Application в своём репо, одноразовый kubectl apply).
 #
-# Требует SSH-доступ Argo CD к server и tzone.
+# Требует SSH-доступ Argo CD к server.
 applications:
   platform-root:
     namespace: argocd
