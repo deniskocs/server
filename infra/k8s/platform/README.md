@@ -57,12 +57,13 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 Приложения в кластере регистрируются по схеме **app-of-apps**:
 
 - `argocd-apps.tf` + `values/argocd-apps.yaml` — корневой `Application` (`platform-root`), который следит за каталогом `applications/` в репозитории `server`;
-- `applications/*.yaml` — дочерние `Application` только верхнего уровня:
+- `applications/*.yaml` — дочерние `Application` верхнего уровня:
   - **`tzone`** — манифесты из репозитория `tzone` (`deploy/k8s`);
-  - **`learn-english`** — манифесты из репозитория `learn-english-backend` (`infra/k8s`);
-  - **`server`** — всё платформенное из этого репозитория (`infra/k8s/server`, Kustomize).
+  - **`server`** — platform из этого репозитория (`infra/k8s/server`, Kustomize).
 
-После `terraform apply` корневой app создаётся автоматически и подтягивает всё из `applications/`. **Добавить новое приложение** = положить новый `Application`-манифест в `applications/`, закоммитить и запушить — Argo CD создаст его сам, без `kubectl apply` и без `terraform apply`.
+После `terraform apply` корневой app создаётся автоматически и подтягивает всё из `applications/`. **Добавить приложение в этот репозиторий** = положить `Application`-манифест в `applications/`, push — Argo CD подхватит сам.
+
+Продуктовые репозитории вне `server`/`tzone` регистрируются **из своего репо** (см. их `infra/argocd/`), без записей здесь.
 
 > Требование: Argo CD должен иметь доступ по SSH к репозиторию `git@github.com:deniskocs/server.git` (так же, как к `tzone`). Проверить: `argocd repo list` или Settings → Repositories в UI. При необходимости добавить репозиторий/ключ.
 

@@ -1,13 +1,10 @@
 # App-of-apps: корневой Argo CD Application.
 #
-# Следит за каталогом infra/k8s/platform/applications в этом репозитории (server)
-# и автоматически создаёт дочерние Application: tzone (репо tzone) + server (репо server, infra/k8s/server)
-# + learn-english (репо learn-english-backend, infra/k8s).
-# Бутстрапится Terraform-ом (helm_release argocd-apps). После этого новые
-# приложения добавляются просто файлом в applications/ — Argo CD подхватит сам.
+# platform-root следит за infra/k8s/platform/applications в этом репозитории (server):
+# tzone и server. Другие продуктовые репозитории подключаются к Argo CD сами
+# (манифест Application в своём репо, одноразовый kubectl apply).
 #
-# Требует: Argo CD должен иметь доступ к репозиторию server по SSH
-# (git@github.com:deniskocs/server.git), как и к tzone.
+# Требует SSH-доступ Argo CD к server и tzone.
 applications:
   platform-root:
     namespace: argocd
