@@ -77,11 +77,11 @@ kubectl create secret generic bitwarden-access-token \
 
 В `SecretStore` обычно указывают `auth.secretRef.credentials.name: bitwarden-access-token` и `key: token` (как в примерах ESO для Bitwarden).
 
-### Bitwarden: проект tzone в репозитории
+### Bitwarden: проект tzone
 
-- **`secretstore-bitwarden-tzone.yaml`** — namespaced `SecretStore` (legacy пример в `external-secrets`).
-- **`clustersecretstore-bitwarden-tzone.yaml`** — **`ClusterSecretStore`** с тем же org/project; токен и CA в namespace `external-secrets` — для `ExternalSecret` в любом namespace (Keycloak и др.).
-- **`external-secret-bitwarden-tzone.yaml`** — пример: тянет один ключ в Secret **`tzone-sm-secrets`**. В **`remoteRef.key`** — имя или UUID секрета в BSM. Если **key — не UUID**, по [доке ESO](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) обязателен **`remoteRef.property`** = **project ID** (как в `SecretStore`); для поиска **по UUID** секрета `property` не указывай.
+- **`ClusterSecretStore` `bitwarden-tzone`** — в репозитории **tzone** (`deploy/k8s/bitwarden/`): привязка к project tzone в BSM; токен и CA — здесь, в namespace `external-secrets`.
+- **`external-secret-keycloak.yaml`** — admin/db Keycloak из BSM project tzone (store выше).
+- ExternalSecret сервисов TZone — в **tzone** (`deploy/k8s/*/external-secret-*.yaml`).
 
 Проверка store: `kubectl describe clustersecretstore bitwarden-tzone`.
 
