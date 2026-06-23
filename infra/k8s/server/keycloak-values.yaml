@@ -29,4 +29,4 @@ postgresql:
     repository: bitnamilegacy/postgresql
 
 commonAnnotations:
-  argocd.argoproj.io/sync-wave: "3"
+  argocd.argoproj.io/sync-wave: "20"

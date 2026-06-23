@@ -77,13 +77,16 @@ kubectl create secret generic bitwarden-access-token \
 
 В `SecretStore` обычно указывают `auth.secretRef.credentials.name: bitwarden-access-token` и `key: token` (как в примерах ESO для Bitwarden).
 
-### Bitwarden: проект tzone
+### Bitwarden: project cluster (platform) и tzone (продукт)
 
-- **`ClusterSecretStore` `bitwarden-tzone`** — в репозитории **tzone** (`deploy/k8s/bitwarden/`): привязка к project tzone в BSM; токен и CA — здесь, в namespace `external-secrets`.
-- **`external-secret-keycloak.yaml`** — admin/db Keycloak из BSM project tzone (store выше).
+- **`ClusterSecretStore` `bitwarden-cluster`** — `infra/k8s/server/bitwarden/`: store platform в **server**; **пока тот же BSM project**, что tzone (ID совпадает).
+- **`external-secret-keycloak.yaml`** — Keycloak admin/db через **bitwarden-cluster**.
+- **`ClusterSecretStore` `bitwarden-tzone`** — репозиторий **tzone** (`deploy/k8s/bitwarden/`): секреты приложений и realm clients.
 - ExternalSecret сервисов TZone — в **tzone** (`deploy/k8s/*/external-secret-*.yaml`).
 
-Проверка store: `kubectl describe clustersecretstore bitwarden-tzone`.
+Проверка: `kubectl describe clustersecretstore bitwarden-cluster` и `bitwarden-tzone`.
+
+Подробнее project **cluster**: [`bitwarden/README.md`](bitwarden/README.md).
 
 ## Bitwarden Secrets Manager (сервис вне кластера)
 
@@ -97,11 +100,11 @@ kubectl create secret generic bitwarden-access-token \
 
 Один release `bitnami/keycloak` в `kustomization.yaml` (PostgreSQL — subchart), values — `keycloak-values.yaml`.
 
-Пароли **не в git** — `ExternalSecret` **`external-secret-keycloak.yaml`** тянет из Bitwarden в Secret **`keycloak-secrets`** (namespace `keycloak`, sync-wave `2`). Chart Keycloak — sync-wave `3`.
+Пароли **не в git** — `ExternalSecret` **`external-secret-keycloak.yaml`** тянет из Bitwarden project **cluster** в Secret **`keycloak-secrets`** (sync-wave `19`). Chart Keycloak — sync-wave `20`.
 
-### Секреты в Bitwarden (проект tzone)
+### Секреты Keycloak в Bitwarden (project tzone, тот же что раньше)
 
-Создайте в [Bitwarden Secrets Manager](https://vault.bitwarden.com) два секрета (имена **точно** такие):
+Имена секретов без изменений (см. [`bitwarden/README.md`](bitwarden/README.md)):
 
 | Имя в BSM | Ключ в K8s Secret | Назначение |
 |-----------|-------------------|------------|

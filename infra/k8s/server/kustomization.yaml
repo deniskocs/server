@@ -35,4 +35,5 @@ resources:
   - certificate-bitwarden-root-ca.yaml
   - issuer-bitwarden-internal-ca.yaml
   - certificate-bitwarden-sdk-server-tls.yaml
+  - bitwarden/
   - external-secret-keycloak.yaml
