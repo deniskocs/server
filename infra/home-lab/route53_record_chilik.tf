@@ -35,6 +35,14 @@ resource "aws_route53_record" "chilik_net_learn_english" {
   zone_id = aws_route53_zone.chilik_net.zone_id
 }
 
+resource "aws_route53_record" "chilik_net_argo" {
+  name    = "argo.chilik.net"
+  records = ["chilik.net"]
+  ttl     = "300"
+  type    = "CNAME"
+  zone_id = aws_route53_zone.chilik_net.zone_id
+}
+
 # --- Apex ---
 
 resource "aws_route53_record" "chilik_net_apex" {

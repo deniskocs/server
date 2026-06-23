@@ -1,7 +1,7 @@
-# Argo CD: argo.stage.t-zone.org — cert-manager + Traefik websecure.
+# Argo CD: argo.chilik.net — cert-manager + Traefik websecure (repo server/infra/k8s/server/argocd).
 configs:
   cm:
-    url: https://argo.stage.t-zone.org
+    url: https://argo.chilik.net
     # Kustomize helmCharts (cert-manager, ESO, …) require helm inflation — see server Application path infra/k8s/server.
     kustomize.buildOptions: --enable-helm
   params:

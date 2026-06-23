@@ -1,0 +1,15 @@
+# TLS argo.chilik.net: HTTP-01 через Traefik (Mac nginx :80 → 10.0.0.2:80).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argo-chilik-net
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  secretName: argo-chilik-net-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - argo.chilik.net

@@ -30,7 +30,9 @@ Namespace **`cert-manager`** задаётся явным манифестом (`
 
 **AWS / Route53 не нужны** — DNS-01 только для wildcard `*.stage` без перечисления хостов.
 
-**tzone repo:** `certificate-stage-t-zone-org.yaml` (явные SAN: stage, auth, tenant, darlings, argo) + Ingress `websecure`. Argo CD — `argo.stage.t-zone.org`.
+**tzone repo:** `certificate-stage-t-zone-org.yaml` (SAN: stage, auth, tenant, darlings) + Ingress `websecure`.
+
+**server repo:** `argocd/certificate-argo-chilik-net.yaml` + `argocd/ingress-argocd.yaml` — Argo CD UI `argo.chilik.net` (домашний кластер, как learn-english).
 
 **Router:** `stream :443` SNI → k3s для t-zone; на `:80` `/.well-known/acme-challenge/` для t-zone → `10.0.0.2:80`.
 

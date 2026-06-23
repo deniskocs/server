@@ -1,0 +1,27 @@
+# argo.chilik.net — TLS в k3s (cert-manager), SNI passthrough Mac → Traefik :443.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - secretName: argo-chilik-net-tls
+      hosts:
+        - argo.chilik.net
+  rules:
+    - host: argo.chilik.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
