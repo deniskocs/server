@@ -1,5 +1,5 @@
-# Дочерний Argo CD Application: всё платформенное из репо server (ESO, Keycloak, …).
-# Манифесты — в infra/k8s/server/ (Kustomize). Создаётся корневым platform-root.
+# Argo CD Application server — деплой infra/k8s/server (Kustomize).
+# Регистрация в кластере: одноразовый kubectl apply (см. infra/k8s/argocd/README.md).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

@@ -15,9 +15,3 @@ variable "argocd_namespace" {
   type        = string
   default     = "argocd"
 }
-
-variable "argocd_apps_chart_version" {
-  description = "Версия Helm chart argocd-apps (app-of-apps, репозиторий argo-helm)"
-  type        = string
-  default     = "2.0.5"
-}

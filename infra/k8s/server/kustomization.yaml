@@ -1,4 +1,4 @@
-# Корень «серверного» стека в кластере (см. Argo CD Application server в platform/applications/).
+# Корень platform-стека в кластере (Argo Application server → infra/k8s/argocd/application.yaml).
 # cert-manager и external-secrets — через Helm (helmCharts); в Application нужен kustomize.buildOptions: --enable-helm.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

@@ -10,8 +10,8 @@
 |-----|-----|
 | Репозиторий | `github.com:deniskocs/server` (локально `personal/server`) |
 | Корень K8s-стека под Argo `server` | `infra/k8s/server/` — Kustomize + `helmCharts` |
-| Описание приложения Argo CD `server` | `infra/k8s/platform/applications/server.yaml` |
-| App-of-apps (корень платформы) | `infra/k8s/platform/applications/` + Terraform Helm `argocd-apps` |
+| Описание приложения Argo CD `server` | `infra/k8s/argocd/application.yaml` |
+| Bootstrap Argo CD (Terraform) | `infra/k8s/platform/` — Helm `argo-cd`, values `values/argocd.yaml` |
 
 Приложение **`server`** в Argo CD тянет **только** `path: infra/k8s/server`, `targetRevision: main`. Новые манифесты платформы в кластере добавляются в этот каталог и в `kustomization.yaml`.
 
@@ -125,7 +125,7 @@ infra/k8s/server/
   namespace-external-secrets.yaml
   clusterissuer-selfsigned.yaml
   README.md                       # краткая инструкция по каталогу
-infra/k8s/platform/applications/server.yaml
+infra/k8s/argocd/application.yaml
 ```
 
 Короткий операционный README по каталогу: **`infra/k8s/server/README.md`**. Расширенная фиксация знаний — **этот файл (`WIKI-README.md`)**.
@@ -136,7 +136,7 @@ infra/k8s/platform/applications/server.yaml
 
 | Дата (контекст) | Решение |
 |-----------------|---------|
-| Платформа | Argo CD app-of-apps; приложение `server` деплоит `infra/k8s/server`. |
+| Платформа | Terraform ставит Argo CD; Application `server` self-register из `infra/k8s/argocd/`; деплой `infra/k8s/server`. |
 | TLS внутри кластера | cert-manager + `ClusterIssuer` `selfsigned`; LE отложен до Ingress/DNS. |
 | Секреты для приложений | External Secrets Operator 2.6.0 в NS `external-secrets`; бэкенды подключаются отдельно. |
 | Bitwarden SM / SDK | Подchart `bitwarden-sdk-server` + TLS cert-manager (`bitwarden-tls-certs`, CA в NS `external-secrets`); токен MA вне git. |
@@ -152,7 +152,7 @@ infra/k8s/platform/applications/server.yaml
 
 **Причина:** у очень больших CRD client-side apply через Argo/kubectl накапливает данные в **annotations** и упирается в лимит Kubernetes **256 KiB** на весь объект `metadata.annotations`.
 
-**Что сделано:** в `infra/k8s/platform/applications/server.yaml` в `syncPolicy.syncOptions` добавлено **`ServerSideApply=true`** — синк идёт через server-side apply, без раздувания annotations тем же механизмом.
+**Что сделано:** в `infra/k8s/argocd/application.yaml` в `syncPolicy.syncOptions` добавлено **`ServerSideApply=true`** — синк идёт через server-side apply, без раздувания annotations тем же механизмом.
 
 **Если синк всё ещё падает:** проверь версию Argo CD (опция нужна с поддерживаемых релизов); запасной путь — ставить CRD ESO вне Argo (`kubectl apply --server-side -f …` из chart) и в `external-secrets-values.yaml` выставить `installCRDs: false`.
 
