@@ -1,6 +1,17 @@
+# Platform Keycloak: namespace, Bitwarden secrets, Helm, Ingress keycloak.chilik.net.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+helmCharts:
+  - name: keycloak
+    repo: oci://registry-1.docker.io/bitnamicharts
+    version: "25.2.0"
+    releaseName: keycloak
+    namespace: keycloak
+    valuesFile: keycloak-values.yaml
+
 resources:
+  - namespace-keycloak.yaml
+  - external-secret-keycloak.yaml
   - certificate-keycloak-chilik-net.yaml
   - ingress-keycloak.yaml

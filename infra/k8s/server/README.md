@@ -11,13 +11,15 @@
 
 ## cert-manager (Helm)
 
-Ставится через [helmCharts](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/helmcharts/) в `kustomization.yaml`, значения — `cert-manager-values.yaml` (`crds.enabled: true`).
+Каталог **`cert-manager/`**: Helm Jetstack, namespace, `ClusterIssuer` **`selfsigned`** и **`letsencrypt-prod`**.
 
-После установки создаётся `ClusterIssuer` **`selfsigned`** — им можно выпускать внутренние сертификаты (сервисы внутри кластера без публичного DNS).
+Values — `cert-manager/cert-manager-values.yaml` (`crds.enabled: true`).
+
+После установки **`selfsigned`** выпускает внутренние сертификаты (Bitwarden SDK и т.д.); **`letsencrypt-prod`** — публичный TLS через HTTP-01.
 
 Локально: `kubectl kustomize infra/k8s/server --enable-helm` нужен **Helm** в `PATH`; в Argo CD Helm уже есть в `repo-server`.
 
-Namespace **`cert-manager`** задаётся явным манифестом (`namespace-cert-manager.yaml`, sync-wave `-10`): опция `CreateNamespace` у Application `server` относится только к `spec.destination.namespace`, а не к произвольным namespace из чарта.
+Namespace **`cert-manager`** — `cert-manager/namespace-cert-manager.yaml` (sync-wave `-10`).
 
 ### Let's Encrypt (TZone staging)
 
@@ -25,7 +27,7 @@ Namespace **`cert-manager`** задаётся явным манифестом (`
 
 | Файл | Назначение |
 |------|------------|
-| `clusterissuer-letsencrypt-prod.yaml` | Let's Encrypt (HTTP-01) |
+| `cert-manager/clusterissuer-letsencrypt-prod.yaml` | Let's Encrypt (HTTP-01) |
 | `helmchartconfig-traefik.yaml` | Traefik `:443` на ноде |
 
 **AWS / Route53 не нужны** — DNS-01 только для wildcard `*.stage` без перечисления хостов.
@@ -49,21 +51,23 @@ ACME (Let’s Encrypt) требует:
 
 ## External Secrets Operator (Helm)
 
-Ставится вторым чартом в `kustomization.yaml` ([chart](https://github.com/external-secrets/external-secrets)), namespace **`external-secrets`** — `namespace-external-secrets.yaml` (sync-wave `-8`, после `cert-manager` ns `-10`).
+Каталог **`external-secrets/`**: Helm ESO, namespace, TLS для SDK (cert-manager), **`bitwarden/`** (`ClusterSecretStore`).
 
-Значения: `external-secrets-values.yaml` (`installCRDs: true`). В кластере появятся CRD `ExternalSecret`, `SecretStore`, `ClusterSecretStore` и контроллеры (включая webhook).
+Chart: [external-secrets](https://github.com/external-secrets/external-secrets), values — `external-secrets/external-secrets-values.yaml` (`installCRDs: true`). Namespace — sync-wave `-8`.
+
+В кластере: CRD `ExternalSecret`, `SecretStore`, `ClusterSecretStore` и контроллеры (включая webhook).
 
 Подключение конкретных бэкендов (AWS Secrets Manager, Vault, **Bitwarden Secrets Manager** и т.д.) делается отдельными манифестами `ClusterSecretStore` / `SecretStore` и `ExternalSecret` в репозитории приложения или здесь — **токены и ключи в git не кладутся**, только ссылки на Kubernetes `Secret` с учётными данными.
 
 ### Bitwarden Secrets Manager + ESO
 
-Подchart **`bitwarden-sdk-server`** включён (`external-secrets-values.yaml`); TLS для HTTPS выпускает **cert-manager** в namespace `external-secrets`:
+Подchart **`bitwarden-sdk-server`** включён (`external-secrets-values.yaml`); TLS для HTTPS выпускает **cert-manager**:
 
 | Файл | Назначение |
 |------|------------|
-| `certificate-bitwarden-root-ca.yaml` | CA (`Certificate` `bitwarden-root-ca` → Secret **`bitwarden-internal-ca`**, wave `15`) |
-| `issuer-bitwarden-internal-ca.yaml` | **`Issuer`** CA, ссылается на тот Secret (wave `16`) |
-| `certificate-bitwarden-sdk-server-tls.yaml` | Листовой сертификат для `bitwarden-sdk-server…svc` → Secret **`bitwarden-tls-certs`** с `tls.crt`, `tls.key`, `ca.crt` (wave `17`) |
+| `external-secrets/certificate-bitwarden-root-ca.yaml` | CA → Secret **`bitwarden-internal-ca`** (wave `15`) |
+| `external-secrets/issuer-bitwarden-internal-ca.yaml` | **`Issuer`** CA (wave `16`) |
+| `external-secrets/certificate-bitwarden-sdk-server-tls.yaml` | Secret **`bitwarden-tls-certs`** (wave `17`) |
 
 У **Deployment** SDK аннотация **`argocd.argoproj.io/sync-wave: "20"`**, чтобы под стартовал после готовности Secret.
 
@@ -81,14 +85,14 @@ kubectl create secret generic bitwarden-access-token \
 
 ### Bitwarden: project cluster (platform) и tzone (продукт)
 
-- **`ClusterSecretStore` `bitwarden-cluster`** — `infra/k8s/server/bitwarden/`: store platform в **server**; **пока тот же BSM project**, что tzone (ID совпадает).
-- **`external-secret-keycloak.yaml`** — Keycloak admin/db через **bitwarden-cluster**.
+- **`ClusterSecretStore` `bitwarden-cluster`** — `external-secrets/bitwarden/`: store platform в **server**; **пока тот же BSM project**, что tzone (ID совпадает).
+- **`keycloak/`** — Keycloak admin/db через **bitwarden-cluster** (`external-secret-keycloak.yaml`).
 - **`ClusterSecretStore` `bitwarden-tzone`** — репозиторий **tzone** (`deploy/k8s/bitwarden/`): секреты приложений и realm clients.
 - ExternalSecret сервисов TZone — в **tzone** (`deploy/k8s/*/external-secret-*.yaml`).
 
 Проверка: `kubectl describe clustersecretstore bitwarden-cluster` и `bitwarden-tzone`.
 
-Подробнее project **cluster**: [`bitwarden/README.md`](bitwarden/README.md).
+Подробнее project **cluster**: [`external-secrets/bitwarden/README.md`](external-secrets/bitwarden/README.md).
 
 ## Bitwarden Secrets Manager (сервис вне кластера)
 
@@ -100,13 +104,13 @@ kubectl create secret generic bitwarden-access-token \
 
 ## Keycloak (Helm)
 
-Один release `bitnami/keycloak` в `kustomization.yaml` (PostgreSQL — subchart), values — `keycloak-values.yaml`.
+Всё platform Keycloak — каталог **`keycloak/`**: namespace, `ExternalSecret`, Helm `bitnami/keycloak` (PostgreSQL subchart), Certificate и Ingress для `keycloak.chilik.net`.
 
-Пароли **не в git** — `ExternalSecret` **`external-secret-keycloak.yaml`** тянет из Bitwarden project **cluster** в Secret **`keycloak-secrets`** (sync-wave `19`). Chart Keycloak — sync-wave `20`.
+Пароли **не в git** — `keycloak/external-secret-keycloak.yaml` тянет из Bitwarden в Secret **`keycloak-secrets`** (sync-wave `19`). Chart — sync-wave `20`, Ingress — `21`.
 
 ### Секреты Keycloak в Bitwarden (project tzone, тот же что раньше)
 
-Имена секретов без изменений (см. [`bitwarden/README.md`](bitwarden/README.md)):
+Имена секретов без изменений (см. [`external-secrets/bitwarden/README.md`](external-secrets/bitwarden/README.md)):
 
 | Имя в BSM | Ключ в K8s Secret | Назначение |
 |-----------|-------------------|------------|
@@ -126,7 +130,7 @@ kubectl get secret keycloak-secrets -n keycloak
 
 | Куда | URL |
 |------|-----|
-| Admin Console (снаружи) | https://keycloak.chilik.net — Ingress `keycloak/ingress-keycloak.yaml`, `hostname` в `keycloak-values.yaml` |
+| Admin Console (снаружи) | https://keycloak.chilik.net — `keycloak/ingress-keycloak.yaml`, `hostname` в `keycloak/keycloak-values.yaml` |
 | Внутри кластера | `http://keycloak.keycloak.svc.cluster.local:80` |
 
 Логин `admin`, пароль из Bitwarden (`keycloak-admin-password`).

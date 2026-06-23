@@ -1,4 +1,4 @@
-# Внутренние сертификаты (bitwarden-sdk, webhooks и т.д.). Публичные — позже через ACME.
+# Внутренние сертификаты (bitwarden-sdk, webhooks и т.д.). Публичные — через letsencrypt-prod.
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:

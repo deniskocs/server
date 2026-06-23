@@ -1,41 +1,11 @@
 # Корень platform-стека в кластере (Argo Application server → infra/k8s/argocd/application.yaml).
-# cert-manager и external-secrets — через Helm (helmCharts); в Application нужен kustomize.buildOptions: --enable-helm.
+# Вложенные kustomization с helmCharts требуют kustomize.buildOptions: --enable-helm в Argo CD.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-helmCharts:
-  - name: cert-manager
-    repo: https://charts.jetstack.io
-    version: "v1.20.2"
-    releaseName: cert-manager
-    namespace: cert-manager
-    valuesFile: cert-manager-values.yaml
-    includeCRDs: true
-  - name: external-secrets
-    repo: https://charts.external-secrets.io
-    version: "2.6.0"
-    releaseName: external-secrets
-    namespace: external-secrets
-    valuesFile: external-secrets-values.yaml
-    includeCRDs: true
-  - name: keycloak
-    repo: oci://registry-1.docker.io/bitnamicharts
-    version: "25.2.0"
-    releaseName: keycloak
-    namespace: keycloak
-    valuesFile: keycloak-values.yaml
-
 resources:
-  - namespace-cert-manager.yaml
-  - namespace-external-secrets.yaml
-  - namespace-keycloak.yaml
-  - clusterissuer-selfsigned.yaml
-  - clusterissuer-letsencrypt-prod.yaml
+  - cert-manager/
+  - external-secrets/
   - helmchartconfig-traefik.yaml
-  - certificate-bitwarden-root-ca.yaml
-  - issuer-bitwarden-internal-ca.yaml
-  - certificate-bitwarden-sdk-server-tls.yaml
-  - bitwarden/
   - argocd/
   - keycloak/
-  - external-secret-keycloak.yaml

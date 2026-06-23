@@ -1,4 +1,4 @@
-# Namespace для Keycloak (IdP TZone). См. infra/k8s/server/keycloak.yaml.
+# Namespace для Keycloak (platform IdP). См. keycloak/kustomization.yaml.
 apiVersion: v1
 kind: Namespace
 metadata:
