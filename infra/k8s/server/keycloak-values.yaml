@@ -8,7 +8,9 @@ auth:
 httpEnabled: true
 
 # Публичный доступ: keycloak.chilik.net (Ingress + cert-manager в keycloak/).
+# TLS terminate на Traefik; Keycloak — HTTP + proxy headers (chart 25 validation).
 proxy: edge
+proxyHeaders: xforwarded
 production: true
 hostname: keycloak.chilik.net
 
