@@ -5,11 +5,11 @@ Terraform-стек для **homelab k3s**: установка Argo CD до GitOp
 Управляет:
 
 - namespace `argocd`;
-- Helm release `argo-cd` ([argo-helm](https://github.com/argoproj/argo-helm), values — `values/argocd.yaml`).
+- Helm release `argo-cd` ([argo-helm](https://github.com/argoproj/argo-helm), values — [`argocd/values.yaml`](argocd/values.yaml)).
 
-**Не управляет** Application в GitOps — каждый репозиторий регистрирует свой Application сам (`infra/k8s/argocd/` для `server`, `deploy/argocd/` в tzone и т.д.).
+Bootstrap Argo CD и Application **`server`** — каталог [`argocd/`](argocd/README.md). Остальные репозитории регистрируют свои Application сами (`deploy/argocd/` в tzone и т.д.).
 
-Пара с **`infra/home-lab/`** (AWS DNS `chilik.net`). GitOps-манифесты — **`infra/k8s/server/`**.
+Пара с **`infra/home-lab/`** (AWS DNS `chilik.net`). GitOps-манифесты — **`infra/k8s/`** (Ingress `argo.chilik.net` — **`infra/k8s/argocd/`**, не этот каталог).
 
 ## Где запускать
 
@@ -24,7 +24,7 @@ terraform plan
 terraform apply
 ```
 
-После первой установки — одноразово зарегистрировать Application `server`: [`../k8s/argocd/README.md`](../k8s/argocd/README.md).
+После первой установки — одноразово зарегистрировать Application `server`: [`argocd/README.md`](argocd/README.md).
 
 ## Миграция state из `infra/k8s/platform`
 
@@ -47,7 +47,7 @@ terraform plan   # ожидается: No changes
 
 | Application | Регистрация |
 |-------------|-------------|
-| **server** | `infra/k8s/argocd/application.yaml` + kubectl apply |
+| **server** | `infra/home-cluster/argocd/application.yaml` + kubectl apply |
 | **tzone** | `tzone/deploy/argocd/application.yaml` |
 | **learn-english** | `learn-english-backend/infra/argocd/application.yaml` |
 

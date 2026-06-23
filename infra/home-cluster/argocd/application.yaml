@@ -1,5 +1,5 @@
-# Argo CD Application server — деплой infra/k8s/server (Kustomize).
-# Регистрация в кластере: одноразовый kubectl apply (см. infra/k8s/argocd/README.md).
+# Argo CD Application server — деплой infra/k8s (Kustomize).
+# Регистрация в кластере: одноразовый kubectl apply (см. infra/home-cluster/argocd/README.md).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -17,7 +17,7 @@ spec:
   source:
     repoURL: git@github.com:deniskocs/server.git
     targetRevision: main
-    path: infra/k8s/server
+    path: infra/k8s
   destination:
     server: https://kubernetes.default.svc
     # Для Kustomize с ресурсами в разных namespace это поле не подменяет metadata.namespace в манифестах.

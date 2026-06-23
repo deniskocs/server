@@ -1,4 +1,4 @@
-# Корень platform-стека в кластере (Argo Application server → infra/k8s/argocd/application.yaml).
+# Корень platform-стека в кластере (Argo Application server → infra/home-cluster/argocd/application.yaml).
 # Вложенные kustomization с helmCharts требуют kustomize.buildOptions: --enable-helm в Argo CD.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

@@ -11,7 +11,7 @@ resource "helm_release" "argocd" {
   timeout = 600
 
   values = [
-    file("${path.module}/values/argocd.yaml")
+    file("${path.module}/argocd/values.yaml")
   ]
 
   depends_on = [kubernetes_namespace.argocd]

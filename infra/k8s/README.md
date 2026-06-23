@@ -1,9 +1,9 @@
 # Серверный стек в Kubernetes
 
-Сюда складываются манифесты, которые Argo CD синхронизирует **одним** приложением `server` (см. `infra/k8s/argocd/application.yaml`).
+Манифесты, которые Argo CD синхронизирует **одним** приложением `server` (см. `infra/home-cluster/argocd/application.yaml`).
 
-- Регистрация Application `server` — одноразовый apply из `infra/k8s/argocd/` (см. README там).
-- Всё содержимое деплоя из этого репозитория — под `infra/k8s/server/` (подкаталоги + записи в `kustomization.yaml`).
+- Bootstrap Argo CD и регистрация Application `server` — `infra/home-cluster/argocd/` (см. README там).
+- Подкаталоги (`cert-manager/`, `external-secrets/`, …) + записи в `kustomization.yaml`.
 
 Порядок применения при необходимости задаётся аннотациями sync-wave Argo CD (`argocd.argoproj.io/sync-wave`).
 
@@ -17,7 +17,7 @@ Values — `cert-manager/cert-manager-values.yaml` (`crds.enabled: true`).
 
 После установки **`selfsigned`** выпускает внутренние сертификаты (Bitwarden SDK и т.д.); **`letsencrypt-prod`** — публичный TLS через HTTP-01.
 
-Локально: `kubectl kustomize infra/k8s/server --enable-helm` нужен **Helm** в `PATH`; в Argo CD Helm уже есть в `repo-server`.
+Локально: `kubectl kustomize infra/k8s --enable-helm` нужен **Helm** в `PATH`; в Argo CD Helm уже есть в `repo-server`.
 
 Namespace **`cert-manager`** — `cert-manager/namespace-cert-manager.yaml` (sync-wave `-10`).
 

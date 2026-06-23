@@ -1,0 +1,13 @@
+# Helm values для argo-cd (Terraform argocd.tf).
+# Публичный URL argo.chilik.net — cert-manager + Ingress в infra/k8s/argocd/ (GitOps sync).
+configs:
+  cm:
+    url: https://argo.chilik.net
+    # Kustomize helmCharts (cert-manager, ESO, …) require helm inflation — see server Application path infra/k8s.
+    kustomize.buildOptions: --enable-helm
+  params:
+    server.insecure: "true"
+
+server:
+  service:
+    type: ClusterIP
