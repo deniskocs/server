@@ -11,7 +11,7 @@
 | Репозиторий | `github.com:deniskocs/server` (локально `personal/server`) |
 | Корень K8s-стека под Argo `server` | `infra/k8s/server/` — Kustomize + `helmCharts` |
 | Описание приложения Argo CD `server` | `infra/k8s/argocd/application.yaml` |
-| Bootstrap Argo CD (Terraform) | `infra/k8s/platform/` — Helm `argo-cd`, values `values/argocd.yaml` |
+| Bootstrap Argo CD (Terraform) | `infra/home-cluster/` — Helm `argo-cd`, values `values/argocd.yaml` |
 
 Приложение **`server`** в Argo CD тянет **только** `path: infra/k8s/server`, `targetRevision: main`. Новые манифесты платформы в кластере добавляются в этот каталог и в `kustomization.yaml`.
 
@@ -114,10 +114,12 @@ kubectl create secret generic bitwarden-access-token \
 ## 8. Связанные пути в репозитории
 
 ```
+infra/home-cluster/               # Terraform: bootstrap Argo CD (Helm)
+infra/home-lab/                   # Terraform: AWS DNS chilik.net
 infra/k8s/server/
   kustomization.yaml              # cert-manager/, external-secrets/, traefik, argocd/, keycloak/
-  cert-manager/                   # Helm, namespace, ClusterIssuers
-  external-secrets/               # Helm, SDK TLS, bitwarden/ store
+  cert-manager/
+  external-secrets/
   helmchartconfig-traefik.yaml
   argocd/
   keycloak/
@@ -133,7 +135,7 @@ infra/k8s/argocd/application.yaml
 
 | Дата (контекст) | Решение |
 |-----------------|---------|
-| Платформа | Terraform ставит Argo CD; Application `server` self-register из `infra/k8s/argocd/`; деплой `infra/k8s/server`. |
+| Платформа | Terraform ставит Argo CD (`infra/home-cluster/`); Application `server` self-register из `infra/k8s/argocd/`; деплой `infra/k8s/server`. |
 | TLS внутри кластера | cert-manager + `ClusterIssuer` `selfsigned`; LE отложен до Ingress/DNS. |
 | Секреты для приложений | External Secrets Operator 2.6.0 в NS `external-secrets`; бэкенды подключаются отдельно. |
 | Bitwarden SM / SDK | Подchart `bitwarden-sdk-server` + TLS cert-manager (`bitwarden-tls-certs`, CA в NS `external-secrets`); токен MA вне git. |

@@ -6,7 +6,8 @@
 Не путать с:
 
 - `infra/bootstrap-s3-state` — bootstrap S3 bucket для remote state;
-- `infra/k8s/` — Kubernetes / Argo CD;
+- `infra/home-cluster` — Terraform bootstrap Argo CD в homelab k3s;
+- `infra/k8s/` — GitOps-манифесты (Argo Application `server`);
 - `tzone/infra/terraform` — продукт TZone (`t-zone.org`, SES, media и т.д.).
 
 ## Credentials
