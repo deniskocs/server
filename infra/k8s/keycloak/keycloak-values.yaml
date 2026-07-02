@@ -35,5 +35,12 @@ postgresql:
     registry: docker.io
     repository: bitnamilegacy/postgresql
 
+# Realm llm-orchestrator — llm-orchestrator-realm.json → ConfigMap llm-orchestrator-keycloak-realm.
+keycloakConfigCli:
+  enabled: true
+  existingConfigmap: llm-orchestrator-keycloak-realm
+  annotations:
+    argocd.argoproj.io/sync-wave: "22"
+
 commonAnnotations:
   argocd.argoproj.io/sync-wave: "20"

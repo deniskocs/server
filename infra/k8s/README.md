@@ -145,4 +145,16 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 ### Realm `tzone`
 
-**Не в этом репозитории.** Server ставит только платформенный Keycloak (Helm + секреты). Декларативный realm, clients и dev-user — Argo CD Application **`tzone`**, каталог `tzone/deploy/k8s/keycloak/` (источник: `services/keycloak/infra/realm/tzone-realm.json`).
+**Не в этом репозитории.** Декларативный realm, clients и dev-user — Argo CD Application **`tzone`**, каталог `tzone/deploy/k8s/keycloak/` (источник: `services/keycloak/infra/realm/tzone-realm.json`).
+
+### Realm `llm-orchestrator`
+
+В **`keycloak/`**:
+
+| Файл | Назначение |
+|------|------------|
+| `llm-orchestrator-realm.json` | Realm, роль `user`, client `llm-orchestrator-web` (public + PKCE) |
+| `kustomization.yaml` | ConfigMap `llm-orchestrator-keycloak-realm` (sync-wave `19`) |
+| `keycloak-values.yaml` | `keycloakConfigCli` → Job импорта (sync-wave `22`) |
+
+Публичный URL веба: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`.

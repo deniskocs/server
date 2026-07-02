@@ -10,6 +10,18 @@ helmCharts:
     namespace: keycloak
     valuesFile: keycloak-values.yaml
 
+configMapGenerator:
+  - name: llm-orchestrator-keycloak-realm
+    namespace: keycloak
+    files:
+      - llm-orchestrator-realm.json
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "19"
+
+generatorOptions:
+  disableNameSuffixHash: true
+
 resources:
   - namespace-keycloak.yaml
   - external-secret-keycloak.yaml
