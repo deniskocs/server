@@ -20,13 +20,9 @@ spec:
       restartPolicy: Never
       containers:
         - name: keycloak-config-cli
-          image: docker.io/bitnamilegacy/keycloak-config-cli:6.4.0-debian-12-r11
+          # bitnami/* теги сняты; adorsys — upstream keycloak-config-cli (совместим с Keycloak 26).
+          image: docker.io/adorsys/keycloak-config-cli:6.5.1-26
           imagePullPolicy: IfNotPresent
-          command:
-            - java
-          args:
-            - -jar
-            - /opt/bitnami/keycloak-config-cli/keycloak-config-cli.jar
           env:
             - name: KEYCLOAK_URL
               value: http://keycloak.keycloak.svc.cluster.local:80

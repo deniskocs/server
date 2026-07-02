@@ -35,5 +35,10 @@ postgresql:
     registry: docker.io
     repository: bitnamilegacy/postgresql
 
+# Не использовать Helm keycloakConfigCli — Job с bitnami/keycloak-config-cli (образ снят).
+# Импорт realm: job-keycloak-config-cli-llm-orchestrator.yaml (adorsys/keycloak-config-cli).
+keycloakConfigCli:
+  enabled: false
+
 commonAnnotations:
   argocd.argoproj.io/sync-wave: "20"

@@ -159,7 +159,7 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 Публичный URL веба: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`.
 
-Если sync завис на `keycloak-keycloak-config-cli` — удалить старый Helm Job и sync снова:
+Если sync завис на `keycloak-keycloak-config-cli` — это **старый** Helm Job (образ `bitnami/keycloak-config-cli` снят). Удалить и sync снова:
 
 ```bash
 kubectl delete job keycloak-keycloak-config-cli -n keycloak --ignore-not-found
