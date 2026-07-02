@@ -155,6 +155,14 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 |------|------------|
 | `llm-orchestrator-realm.json` | Realm, роль `user`, client `llm-orchestrator-web` (public + PKCE) |
 | `kustomization.yaml` | ConfigMap `llm-orchestrator-keycloak-realm` (sync-wave `19`) |
-| `keycloak-values.yaml` | `keycloakConfigCli` → Job импорта (sync-wave `22`) |
+| `job-keycloak-config-cli-llm-orchestrator.yaml` | PostSync Job импорта (sync-wave `22`) |
 
 Публичный URL веба: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`.
+
+Если sync завис на `keycloak-keycloak-config-cli` — удалить старый Helm Job и sync снова:
+
+```bash
+kubectl delete job keycloak-keycloak-config-cli -n keycloak --ignore-not-found
+argocd app sync server
+kubectl logs -n keycloak job/keycloak-config-cli-llm-orchestrator
+```

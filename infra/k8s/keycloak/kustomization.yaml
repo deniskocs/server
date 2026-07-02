@@ -27,3 +27,4 @@ resources:
   - external-secret-keycloak.yaml
   - certificate-keycloak-chilik-net.yaml
   - ingress-keycloak.yaml
+  - job-keycloak-config-cli-llm-orchestrator.yaml
