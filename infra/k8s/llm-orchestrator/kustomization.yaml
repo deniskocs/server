@@ -5,4 +5,5 @@ resources:
   - namespace-llm-orchestrator.yaml
   - certificate-llms-chilik-net.yaml
   - llm-orchestrator-web.yaml
+  - ingress-llms-chilik-net-http.yaml
   - ingress-llms-chilik-net.yaml

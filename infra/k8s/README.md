@@ -167,6 +167,9 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 | `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt HTTP-01 (sync-wave `6`) |
 | `llm-orchestrator-web.yaml` | Deployment + Service; образ — release workflow |
 | `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → Traefik `websecure` (sync-wave `7`) |
+| `ingress-llms-chilik-net-http.yaml` | HTTP → HTTPS redirect на `web` entrypoint |
+
+Публичный URL: **https://llms.chilik.net** (не `http://` — без redirect будет Traefik `404 page not found`).
 
 После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
 

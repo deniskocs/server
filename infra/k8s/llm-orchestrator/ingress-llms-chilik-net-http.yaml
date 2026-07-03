@@ -1,0 +1,35 @@
+# HTTP → HTTPS для llms.chilik.net (Traefik entrypoint web).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: llm-orchestrator
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-orchestrator-web-http
+  namespace: llm-orchestrator
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: llm-orchestrator-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: llms.chilik.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-orchestrator-web
+                port:
+                  number: 80
