@@ -6,4 +6,3 @@ patches:
   - path: vllm-models-hostpath.patch.yaml
     target:
       kind: Deployment
-      labelSelector: llm-orchestrator.chilik.net/component=vllm

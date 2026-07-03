@@ -6,8 +6,6 @@ metadata:
   namespace: llm-orchestrator
   labels:
     app: vllm-qwen36-35b-nvfp4
-    llm-orchestrator.chilik.net/component: vllm
-    llm-orchestrator.chilik.net/model: qwen36-35b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
     llm-orchestrator.chilik.net/enabled: "false"
@@ -20,8 +18,6 @@ spec:
     metadata:
       labels:
         app: vllm-qwen36-35b-nvfp4
-        llm-orchestrator.chilik.net/component: vllm
-        llm-orchestrator.chilik.net/model: qwen36-35b-nvfp4
     spec:
       nodeSelector:
         kubernetes.io/hostname: ai-server

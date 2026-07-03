@@ -6,13 +6,11 @@ metadata:
   namespace: llm-orchestrator
   labels:
     app: vllm-qwen25-7b-awq
-    llm-orchestrator.chilik.net/component: vllm
-    llm-orchestrator.chilik.net/model: qwen25-7b-awq
   annotations:
     argocd.argoproj.io/sync-wave: "8"
     llm-orchestrator.chilik.net/enabled: "false"
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: vllm-qwen25-7b-awq
@@ -20,8 +18,6 @@ spec:
     metadata:
       labels:
         app: vllm-qwen25-7b-awq
-        llm-orchestrator.chilik.net/component: vllm
-        llm-orchestrator.chilik.net/model: qwen25-7b-awq
     spec:
       nodeSelector:
         kubernetes.io/hostname: ai-server

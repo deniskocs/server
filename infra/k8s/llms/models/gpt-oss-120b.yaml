@@ -6,8 +6,6 @@ metadata:
   namespace: llm-orchestrator
   labels:
     app: vllm-gpt-oss-120b
-    llm-orchestrator.chilik.net/component: vllm
-    llm-orchestrator.chilik.net/model: gpt-oss-120b
   annotations:
     argocd.argoproj.io/sync-wave: "8"
     llm-orchestrator.chilik.net/enabled: "false"
@@ -20,8 +18,6 @@ spec:
     metadata:
       labels:
         app: vllm-gpt-oss-120b
-        llm-orchestrator.chilik.net/component: vllm
-        llm-orchestrator.chilik.net/model: gpt-oss-120b
     spec:
       nodeSelector:
         kubernetes.io/hostname: ai-server
