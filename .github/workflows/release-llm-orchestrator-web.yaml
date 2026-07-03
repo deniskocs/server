@@ -12,11 +12,6 @@ on:
           - minor
           - major
           - current
-      api_base_url:
-        description: "VITE_API_BASE_URL baked into the frontend (browser → orchestrator API)"
-        required: true
-        default: "https://api.llms.chilik.net"
-        type: string
 
 permissions:
   contents: write
@@ -52,7 +47,6 @@ jobs:
       version: ${{ needs.release.outputs.version }}
       cache_slug: llm-orchestrator-web
       build_args: |
-        VITE_API_BASE_URL=${{ github.event.inputs.api_base_url }}
         VITE_KEYCLOAK_ISSUER=https://keycloak.chilik.net/realms/llm-orchestrator
         VITE_KEYCLOAK_CLIENT_ID=llm-orchestrator-web
     secrets:

@@ -161,7 +161,7 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 | `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → web (sync-wave `7`) |
 | `ingress-api-llms-chilik-net.yaml` | Ingress `api.llms.chilik.net` → API :8765 (sync-wave `7`) |
 
-Публичные URL: **https://llms.chilik.net** (UI), **https://api.llms.chilik.net** (API). DNS — `infra/home-lab/route53_record_chilik.tf`. Web в CI: `VITE_API_BASE_URL=https://api.llms.chilik.net`. Локальная разработка: `localhost:5173`, API через Vite proxy.
+Публичные URL: **https://llms.chilik.net** (UI), **https://api.llms.chilik.net** (API). DNS — `infra/home-lab/route53_record_chilik.tf`. Web образ: `VITE_API_BASE_URL` по умолчанию в `llm-orchestrator/web/Dockerfile`. Локальная разработка: `localhost:5173`, API через Vite proxy.
 
 После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
 
