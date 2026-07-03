@@ -44,36 +44,17 @@ jobs:
 
   build-image:
     needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      - name: Build and push web image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./llm-orchestrator/web
-          file: ./llm-orchestrator/web/Dockerfile
-          push: true
-          platforms: linux/arm64
-          build-args: |
-            VITE_API_BASE_URL=${{ github.event.inputs.api_base_url }}
-          tags: |
-            deniskocs/llm-orchestrator-web:${{ needs.release.outputs.version }}
-            deniskocs/llm-orchestrator-web:staging
-
-      - name: Logout from Docker Hub
-        if: always()
-        run: docker logout
+    uses: ./.github/workflows/reusable-docker-multiarch-build.yml
+    with:
+      context: ./llm-orchestrator/web
+      dockerfile: ./llm-orchestrator/web/Dockerfile
+      image_repo: deniskocs/llm-orchestrator-web
+      version: ${{ needs.release.outputs.version }}
+      cache_slug: llm-orchestrator-web
+      build_args: VITE_API_BASE_URL=${{ github.event.inputs.api_base_url }}
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
   finish:
     needs: [release, build-image]

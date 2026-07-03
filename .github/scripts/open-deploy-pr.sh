@@ -36,7 +36,10 @@ fi
 
 sed -i "s|\(${IMAGE_REPO}:\)[^ \"']*|\1${VERSION}|g" "$MANIFEST"
 
-if git diff --quiet "$MANIFEST" && [[ "$IS_CURRENT" == "true" ]]; then
+# Manifest уже на нужной версии (bootstrap или rebuild) — форсируем rollout через redeploy-at.
+FORCE_REDEPLOY=false
+if git diff --quiet "$MANIFEST"; then
+  FORCE_REDEPLOY=true
   REDEPLOY_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   if grep -q 'chilik.net/redeploy-at:' "$MANIFEST"; then
     sed -i "s|chilik.net/redeploy-at:.*|chilik.net/redeploy-at: \"${REDEPLOY_AT}\"|" "$MANIFEST"
@@ -61,7 +64,7 @@ if git diff --quiet "$MANIFEST"; then
 fi
 
 git add "$MANIFEST"
-if [[ "$IS_CURRENT" == "true" ]]; then
+if [[ "$IS_CURRENT" == "true" || "$FORCE_REDEPLOY" == "true" ]]; then
   git commit -m "deploy(${SERVICE_SLUG}): ${VERSION} (redeploy)"
 else
   git commit -m "deploy(${SERVICE_SLUG}): ${VERSION}"
@@ -84,9 +87,9 @@ if [[ -n "$EXISTING" && "$EXISTING" != "null" ]]; then
   exit 0
 fi
 
-if [[ "$IS_CURRENT" == "true" ]]; then
+if [[ "$IS_CURRENT" == "true" || "$FORCE_REDEPLOY" == "true" ]]; then
   PR_TITLE="deploy(${SERVICE_SLUG}): ${VERSION} (redeploy)"
-  PR_NOTE="Пересборка и передеплой текущей версии \`${VERSION}\`."
+  PR_NOTE="Пересборка и передеплой версии \`${VERSION}\`."
 else
   PR_TITLE="deploy(${SERVICE_SLUG}): ${VERSION}"
   PR_NOTE="После merge Argo CD задеплоит новую версию в кластер."
