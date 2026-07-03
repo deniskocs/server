@@ -9,9 +9,9 @@ ENV npm_config_devdir=/tmp/node-gyp
 # Baked at build: browser calls API on 10.0.0.3:<port> (set in deploy-orchestrator workflow)
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-ARG VITE_KEYCLOAK_ISSUER
+ARG VITE_KEYCLOAK_ISSUER=https://keycloak.chilik.net/realms/llm-orchestrator
 ENV VITE_KEYCLOAK_ISSUER=${VITE_KEYCLOAK_ISSUER}
-ARG VITE_KEYCLOAK_CLIENT_ID
+ARG VITE_KEYCLOAK_CLIENT_ID=llm-orchestrator-web
 ENV VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
 
 COPY package.json package-lock.json* ./

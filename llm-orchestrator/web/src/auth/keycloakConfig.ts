@@ -6,13 +6,20 @@ export interface KeycloakConfig {
 const DEFAULT_ISSUER = "https://keycloak.chilik.net/realms/llm-orchestrator";
 const DEFAULT_CLIENT_ID = "llm-orchestrator-web";
 
+function envOrDefault(value: string | undefined, fallback: string): string {
+  const trimmed = (value ?? "").trim();
+  return trimmed || fallback;
+}
+
 export function readKeycloakConfig(): KeycloakConfig | null {
-  const issuer = (
-    import.meta.env.VITE_KEYCLOAK_ISSUER ?? DEFAULT_ISSUER
-  ).trim().replace(/\/$/, "");
-  const clientId = (
-    import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? DEFAULT_CLIENT_ID
-  ).trim();
+  const issuer = envOrDefault(
+    import.meta.env.VITE_KEYCLOAK_ISSUER,
+    DEFAULT_ISSUER
+  ).replace(/\/$/, "");
+  const clientId = envOrDefault(
+    import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
+    DEFAULT_CLIENT_ID
+  );
   if (!issuer || !clientId) return null;
   return { issuer, clientId };
 }

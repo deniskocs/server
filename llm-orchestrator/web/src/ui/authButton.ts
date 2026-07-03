@@ -18,8 +18,14 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 export function mountAuthButton(container: HTMLElement): void {
   const cfg = readKeycloakConfig();
+  container.hidden = false;
   if (!cfg) {
-    container.hidden = true;
+    container.replaceChildren(
+      el("span", {
+        className: "head-auth__user",
+        text: "Auth unavailable",
+      })
+    );
     return;
   }
 
