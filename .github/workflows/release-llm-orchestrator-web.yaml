@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           .github/scripts/open-deploy-pr.sh \
             llm-orchestrator-web \
-            deploy/llm-orchestrator/web.yaml \
+            infra/k8s/llm-orchestrator/llm-orchestrator-web.yaml \
             deniskocs/llm-orchestrator-web \
             "${{ needs.release.outputs.version }}" \
             "${{ needs.release.outputs.git_tag }}" \

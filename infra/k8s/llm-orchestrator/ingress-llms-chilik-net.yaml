@@ -1,0 +1,27 @@
+# llms.chilik.net — TLS в k3s (cert-manager), SNI passthrough Mac → Traefik :443.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-orchestrator-web
+  namespace: llm-orchestrator
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - secretName: llms-chilik-net-tls
+      hosts:
+        - llms.chilik.net
+  rules:
+    - host: llms.chilik.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-orchestrator-web
+                port:
+                  number: 80

@@ -159,6 +159,17 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 Публичный URL веба: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`.
 
+Веб в кластере — каталог **`llm-orchestrator/`**:
+
+| Файл | Назначение |
+|------|------------|
+| `namespace-llm-orchestrator.yaml` | Namespace (sync-wave `-10`) |
+| `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt HTTP-01 (sync-wave `6`) |
+| `llm-orchestrator-web.yaml` | Deployment + Service; образ — release workflow |
+| `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → Traefik `websecure` (sync-wave `7`) |
+
+После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
+
 Если sync завис на `keycloak-keycloak-config-cli` — это **старый** Helm Job (образ `bitnami/keycloak-config-cli` снят). Удалить и sync снова:
 
 ```bash

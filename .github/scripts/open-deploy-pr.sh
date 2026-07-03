@@ -89,7 +89,7 @@ if [[ "$IS_CURRENT" == "true" ]]; then
   PR_NOTE="Пересборка и передеплой текущей версии \`${VERSION}\`."
 else
   PR_TITLE="deploy(${SERVICE_SLUG}): ${VERSION}"
-  PR_NOTE="После merge запусти deploy workflow или обнови контейнер на хосте."
+  PR_NOTE="После merge Argo CD задеплоит новую версию в кластер."
 fi
 
 gh pr create \
