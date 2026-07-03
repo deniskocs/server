@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: deniskocs/llm-orchestrator-web:0.0.3
+          image: deniskocs/llm-orchestrator-web:0.0.4
           imagePullPolicy: Always
           ports:
             - name: http
