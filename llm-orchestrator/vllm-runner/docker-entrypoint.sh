@@ -59,6 +59,9 @@ fi
 if [ -n "${VLLM_TOOL_CALL_PARSER:-}" ]; then
     VLLM_ARGS="$VLLM_ARGS --tool-call-parser $VLLM_TOOL_CALL_PARSER"
 fi
+if [ -n "${VLLM_MOE_BACKEND:-}" ]; then
+    VLLM_ARGS="$VLLM_ARGS --moe-backend $VLLM_MOE_BACKEND"
+fi
 
 if [ ! -d "$MODEL_PATH" ]; then
     echo "❌ Error: Model directory not found at $MODEL_PATH" >&2

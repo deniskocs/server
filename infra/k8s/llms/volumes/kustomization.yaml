@@ -1,0 +1,9 @@
+# hostPath тома на ai-server. Пути меняй здесь — patch подхватит все vLLM Deployments.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+patches:
+  - path: vllm-models-hostpath.patch.yaml
+    target:
+      kind: Deployment
+      labelSelector: llm-orchestrator.chilik.net/component=vllm

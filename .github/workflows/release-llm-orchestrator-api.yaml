@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Version bump from latest git tag (current = rebuild & redeploy latest)"
+        description: "Version bump from latest git tag (current = rebuild latest image; k8s deploy removed)"
         required: true
         type: choice
         options:
@@ -15,7 +15,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   release:
@@ -58,19 +57,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Open deploy PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          .github/scripts/open-deploy-pr.sh \
-            llm-orchestrator-api \
-            infra/k8s/llm-orchestrator/llm-orchestrator-api.yaml \
-            deniskocs/llm-orchestrator-api \
-            "${{ needs.release.outputs.version }}" \
-            "${{ needs.release.outputs.git_tag }}" \
-            "${{ needs.release.outputs.bump }}"
 
       - name: Create git tag
         run: |

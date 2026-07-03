@@ -1,5 +1,4 @@
 # Platform Keycloak: namespace, Bitwarden secrets, Helm, Ingress keycloak.chilik.net.
-# Realm llm-orchestrator — infra/k8s/llm-orchestrator/ (ConfigMap + import Job).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

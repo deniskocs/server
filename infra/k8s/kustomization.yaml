@@ -10,4 +10,5 @@ resources:
   - helmchartconfig-traefik.yaml
   - argocd/
   - keycloak/
-  - llm-orchestrator/
+  # LOCK vLLM workloads — раскомментируй, чтобы Argo синкал llms/ (модели на ai-server)
+  - llms/

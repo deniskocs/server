@@ -1,0 +1,76 @@
+# Llama 3.3 Instruct 70B NVFP4 (PORT 8002). LOCK: enabled=false, replicas=0.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama-33-70b-nvfp4
+  namespace: llm-orchestrator
+  labels:
+    app: vllm-llama-33-70b-nvfp4
+    llm-orchestrator.chilik.net/component: vllm
+    llm-orchestrator.chilik.net/model: llama-33-70b-nvfp4
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+    llm-orchestrator.chilik.net/enabled: "false"
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: vllm-llama-33-70b-nvfp4
+  template:
+    metadata:
+      labels:
+        app: vllm-llama-33-70b-nvfp4
+        llm-orchestrator.chilik.net/component: vllm
+        llm-orchestrator.chilik.net/model: llama-33-70b-nvfp4
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ai-server
+      runtimeClassName: nvidia
+      containers:
+        - name: vllm
+          image: deniskocs/core:vllm-runner-1.0.0
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8002
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8002"
+            - name: API_KEY
+              value: "localkey"
+            - name: DEFAULT_MODEL_NAME
+              value: "nvidia/Llama-3.3-70B-Instruct-NVFP4"
+            - name: SERVED_MODEL_NAME
+              value: "llama-3.3-70b-instruct-fp4"
+            - name: VLLM_MAX_MODEL_LEN
+              value: "4096"
+            - name: VLLM_DTYPE
+              value: "auto"
+            - name: VLLM_GPU_MEMORY_UTILIZATION
+              value: "0.90"
+            - name: VLLM_TENSOR_PARALLEL_SIZE
+              value: "1"
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-llama-33-70b-nvfp4
+  namespace: llm-orchestrator
+  labels:
+    app: vllm-llama-33-70b-nvfp4
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+    llm-orchestrator.chilik.net/enabled: "false"
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm-llama-33-70b-nvfp4
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http

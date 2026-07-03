@@ -36,7 +36,6 @@ postgresql:
     repository: bitnamilegacy/postgresql
 
 # Не использовать Helm keycloakConfigCli — Job с bitnami/keycloak-config-cli (образ снят).
-# Импорт realm llm-orchestrator: infra/k8s/llm-orchestrator/job-keycloak-config-cli-llm-orchestrator.yaml
 keycloakConfigCli:
   enabled: false
 

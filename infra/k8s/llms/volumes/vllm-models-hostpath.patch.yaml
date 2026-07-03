@@ -1,0 +1,18 @@
+# hostPath /home/denis/models → /models для vLLM Deployment (label component=vllm).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  template:
+    spec:
+      volumes:
+        - name: models
+          hostPath:
+            path: /home/denis/models
+            type: Directory
+      containers:
+        - name: vllm
+          volumeMounts:
+            - name: models
+              mountPath: /models

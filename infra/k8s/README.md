@@ -147,28 +147,55 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 **Не в этом репозитории.** Декларативный realm, clients и dev-user — Argo CD Application **`tzone`**, каталог `tzone/deploy/k8s/keycloak/` (источник: `services/keycloak/infra/realm/tzone-realm.json`).
 
-### Realm `llm-orchestrator`
+### Realm `llm-orchestrator` (локально / вне кластера)
 
-В **`llm-orchestrator/`** (ConfigMap и Job в namespace `keycloak`, sync-wave `19` / `22`):
+Realm JSON для web UI — **`llm-orchestrator/llm-orchestrator-realm.json`** (роль `user`, client `llm-orchestrator-web`, PKCE). Импорт в Keycloak вручную или через config-cli при локальной разработке; **из GitOps кластера убран**.
 
-| Файл | Назначение |
-|------|------------|
-| `llm-orchestrator-realm.json` | Realm, роль `user`, client `llm-orchestrator-web` (public + PKCE) |
-| `job-keycloak-config-cli-llm-orchestrator.yaml` | PostSync Job импорта в platform Keycloak |
-| `namespace-llm-orchestrator.yaml` | Namespace (sync-wave `-10`) |
-| `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt: `llms.chilik.net`, `api.llms.chilik.net` (sync-wave `6`) |
-| `llm-orchestrator-web.yaml` | Deployment + Service; образ — release workflow |
-| `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → web (sync-wave `7`) |
-| `ingress-api-llms-chilik-net.yaml` | Ingress `api.llms.chilik.net` → API :8765 (sync-wave `7`) |
+### vLLM models (`llms/`)
 
-Публичные URL: **https://llms.chilik.net** (UI), **https://api.llms.chilik.net** (API). DNS — `infra/home-lab/route53_record_chilik.tf`. Web образ: `VITE_API_BASE_URL` по умолчанию в `llm-orchestrator/web/Dockerfile`. Локальная разработка: `localhost:5173`, API через Vite proxy.
+Каталог **`infra/k8s/llms/`** — GitOps для vLLM на ai-server.
 
-После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
+```
+llms/
+  kustomization.yaml
+  namespace-llm-orchestrator.yaml
+  configs/                    # исходные *.env (источник env для models/*.yaml)
+    gpt-oss-120b.env
+    llama-33-70b-nvfp4.env
+    qwen36-35b-nvfp4.env
+    qwen25-7b-awq.env
+  volumes/                    # hostPath patches (единое место для путей)
+    vllm-models-hostpath.patch.yaml
+  models/
+    gpt-oss-120b.yaml
+    llama-33-70b-nvfp4.yaml
+    qwen36-35b-nvfp4.yaml
+    qwen25-7b-awq.yaml
+```
+
+| Файл | Модель | PORT | Service DNS |
+|------|--------|------|-------------|
+| `models/gpt-oss-120b.yaml` | `openai/gpt-oss-120b` | 8000 | `vllm-gpt-oss-120b:8000` |
+| `models/llama-33-70b-nvfp4.yaml` | `nvidia/Llama-3.3-70B-Instruct-NVFP4` | 8002 | `vllm-llama-33-70b-nvfp4:8002` |
+| `models/qwen36-35b-nvfp4.yaml` | `RedHatAI/Qwen3.6-35B-A3B-NVFP4` | 8003 | `vllm-qwen36-35b-nvfp4:8003` |
+| `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | 8010 | `vllm-qwen25-7b-awq:8010` |
+
+Параметры vLLM в Git дублируются: **`configs/<model>.env`** (редактируй env) и **`models/<model>.yaml`** (env в Deployment — синхронизируй при изменении конфига).
+
+**Двойной LOCK (по умолчанию не запускается):**
+
+1. В **`infra/k8s/kustomization.yaml`** строка `# - llms/` **закомментирована** — Argo не применяет `llms/`.
+2. В **`llms/kustomization.yaml`** модели **закомментированы**; в yaml: `enabled: "false"`, `replicas: 0`.
+
+**Включить одну модель:** раскомментировать `- llms/` в корневом kustomization → в `llms/kustomization.yaml` раскомментировать **один** файл в `models/` → в yaml `enabled: "true"`, `replicas: 1` → `argocd app sync server`.
+
+**Выключить:** обратные шаги; prune удалит объекты, убранные из resources.
+
+После merge: `argocd app sync server`. Prune удалит бывшие ресурсы `infra/k8s/llm-orchestrator/` (web, API, ingress, cert, Keycloak import job).
 
 Если sync завис на `keycloak-keycloak-config-cli` — это **старый** Helm Job (образ `bitnami/keycloak-config-cli` снят). Удалить и sync снова:
 
 ```bash
 kubectl delete job keycloak-keycloak-config-cli -n keycloak --ignore-not-found
 argocd app sync server
-kubectl logs -n keycloak job/keycloak-config-cli-llm-orchestrator
 ```

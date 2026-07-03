@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm-orchestrator
+
+components:
+  - volumes
+
+resources:
+  - namespace-llm-orchestrator.yaml
+  # LOCK: раскомментируй модель + enabled=true + replicas=1 в её yaml.
+  # - models/gpt-oss-120b.yaml
+  # - models/llama-33-70b-nvfp4.yaml
+  # - models/qwen36-35b-nvfp4.yaml
+  - models/qwen25-7b-awq.yaml
