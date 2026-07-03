@@ -149,27 +149,18 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 ### Realm `llm-orchestrator`
 
-В **`keycloak/`**:
+В **`llm-orchestrator/`** (ConfigMap и Job в namespace `keycloak`, sync-wave `19` / `22`):
 
 | Файл | Назначение |
 |------|------------|
 | `llm-orchestrator-realm.json` | Realm, роль `user`, client `llm-orchestrator-web` (public + PKCE) |
-| `kustomization.yaml` | ConfigMap `llm-orchestrator-keycloak-realm` (sync-wave `19`) |
-| `job-keycloak-config-cli-llm-orchestrator.yaml` | PostSync Job импорта (sync-wave `22`) |
-
-Публичный URL веба: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`.
-
-Веб в кластере — каталог **`llm-orchestrator/`**:
-
-| Файл | Назначение |
-|------|------------|
+| `job-keycloak-config-cli-llm-orchestrator.yaml` | PostSync Job импорта в platform Keycloak |
 | `namespace-llm-orchestrator.yaml` | Namespace (sync-wave `-10`) |
 | `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt HTTP-01 (sync-wave `6`) |
 | `llm-orchestrator-web.yaml` | Deployment + Service; образ — release workflow |
 | `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → Traefik `websecure` (sync-wave `7`) |
-| `ingress-llms-chilik-net-http.yaml` | HTTP → HTTPS redirect на `web` entrypoint |
 
-Публичный URL: **https://llms.chilik.net** (не `http://` — без redirect будет Traefik `404 page not found`).
+Публичный URL: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`. Заходить по **HTTPS**; `http://` без отдельного redirect Ingress не обслуживается.
 
 После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
 

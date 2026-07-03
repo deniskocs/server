@@ -1,5 +1,5 @@
-# Импорт realm llm-orchestrator (keycloak-config-cli). Отдельный Job вместо Helm hook —
-# chart keycloak через Kustomize+Argo CD часто зависает на batch/Job/keycloak-keycloak-config-cli.
+# Импорт realm llm-orchestrator в platform Keycloak (namespace keycloak).
+# Отдельный Job вместо Helm keycloakConfigCli (образ bitnami/keycloak-config-cli снят).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,12 +15,11 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/component: keycloak-config-cli
-        app.kubernetes.io/part-of: keycloak
+        app.kubernetes.io/part-of: llm-orchestrator
     spec:
       restartPolicy: Never
       containers:
         - name: keycloak-config-cli
-          # bitnami/* теги сняты; adorsys — upstream keycloak-config-cli (совместим с Keycloak 26).
           image: docker.io/adorsys/keycloak-config-cli:6.5.1-26
           imagePullPolicy: IfNotPresent
           env:

@@ -1,9 +1,21 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+configMapGenerator:
+  - name: llm-orchestrator-keycloak-realm
+    namespace: keycloak
+    files:
+      - llm-orchestrator-realm.json
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "19"
+
+generatorOptions:
+  disableNameSuffixHash: true
+
 resources:
   - namespace-llm-orchestrator.yaml
   - certificate-llms-chilik-net.yaml
   - llm-orchestrator-web.yaml
-  - ingress-llms-chilik-net-http.yaml
   - ingress-llms-chilik-net.yaml
+  - job-keycloak-config-cli-llm-orchestrator.yaml
