@@ -1,4 +1,5 @@
 import type { ConfigRowViewModel, HostStats } from "./types";
+import { jsonAuthHeaders } from "../auth/authHeaders";
 import { apiUrl } from "./apiBase";
 
 class ApiError extends Error {
@@ -21,14 +22,14 @@ type ModelsDto = { rows: ConfigRowViewModel[]; count: number };
 
 export async function fetchHostStats(): Promise<HostStats> {
   const r = await fetch(apiUrl("/api/orchestrator/host-stats"), {
-    headers: { Accept: "application/json" },
+    headers: jsonAuthHeaders(),
   });
   return readJson<HostStats>(r);
 }
 
 export async function fetchModels(): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/models"), {
-    headers: { Accept: "application/json" },
+    headers: jsonAuthHeaders(),
   });
   return readJson<ModelsDto>(r);
 }
@@ -39,7 +40,7 @@ export async function createConfig(
 ): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/configs"), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: jsonAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ fileName, text }),
   });
   return readJson<ModelsDto>(r);
@@ -49,7 +50,8 @@ export async function getConfigFileText(
   configId: string
 ): Promise<{ fileName: string; text: string } | null> {
   const r = await fetch(
-    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/file-text`)
+    apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/file-text`),
+    { headers: jsonAuthHeaders() }
   );
   if (r.status === 404) return null;
   return readJson<{ fileName: string; text: string }>(r);
@@ -63,7 +65,7 @@ export async function updateConfigFileText(
     apiUrl(`/api/orchestrator/configs/${encodeURIComponent(configId)}/file-text`),
     {
       method: "PUT",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: jsonAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ text }),
     }
   );
@@ -83,7 +85,7 @@ async function postModelsAction(
 ): Promise<ModelsDto> {
   const r = await fetch(apiUrl("/api/orchestrator/models/actions"), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: jsonAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ action, configFile }),
   });
   return readJson<ModelsDto>(r);

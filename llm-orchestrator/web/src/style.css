@@ -34,11 +34,52 @@ body {
   padding: 1.5rem 1.25rem 2rem;
 }
 
-.head h1 {
-  margin: 0 0 0.25rem;
+.head__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.head__title-wrap h1 {
+  margin: 0;
   font-size: 1.35rem;
   font-weight: 600;
   color: var(--text);
+}
+
+.head__auth-mount {
+  flex-shrink: 0;
+  padding-top: 0.05rem;
+}
+
+.head-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.head-auth__user {
+  font-size: 0.8rem;
+  color: var(--muted);
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn--login {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.btn--login:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .sub {

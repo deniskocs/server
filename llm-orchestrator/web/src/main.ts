@@ -13,7 +13,9 @@ import {
   deleteConfigFile,
   ApiError,
 } from "./data/repository";
+import { tryCompleteLoginFromUrl } from "./auth/keycloakAuth";
 import { createActionButton } from "./ui/actionButtons";
+import { mountAuthButton } from "./ui/authButton";
 
 function el<K extends keyof HTMLElementTagNameMap>(
   name: K,
@@ -529,6 +531,12 @@ function mount(root: HTMLElement): void {
   root.innerHTML = "";
   const shell = el("div", { className: "shell" });
   const header = el("header", { className: "head" });
+  const headTop = el("div", { className: "head__top" });
+  const titleWrap = el("div", { className: "head__title-wrap" });
+  titleWrap.append(el("h1", { text: "LLM Orchestrator" }));
+  const authMount = el("div", { className: "head__auth-mount" });
+  headTop.append(titleWrap, authMount);
+  mountAuthButton(authMount);
   const sub = el("p", { className: "sub", text: "Loading…" });
   const main = el("main", { className: "main" });
   const hostPanel = el("div", { className: "host-stats" });
@@ -574,10 +582,7 @@ function mount(root: HTMLElement): void {
     }
   };
 
-  header.append(
-    el("h1", { text: "LLM Orchestrator" }),
-    sub
-  );
+  header.append(headTop, sub);
   shell.append(header, main, foot);
   root.append(shell);
   void (async () => {
@@ -614,5 +619,20 @@ function mount(root: HTMLElement): void {
   })();
 }
 
-const app = document.getElementById("app");
-if (app) mount(app);
+async function bootstrap(): Promise<void> {
+  const app = document.getElementById("app");
+  if (!app) return;
+  try {
+    await tryCompleteLoginFromUrl();
+  } catch (e) {
+    console.error(e);
+    const msg = e instanceof Error ? e.message : "Keycloak login failed";
+    app.replaceChildren(
+      el("p", { className: "api-err", text: `Login error: ${msg}` })
+    );
+    return;
+  }
+  mount(app);
+}
+
+void bootstrap();
