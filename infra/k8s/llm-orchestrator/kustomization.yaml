@@ -16,6 +16,7 @@ generatorOptions:
 resources:
   - namespace-llm-orchestrator.yaml
   - certificate-llms-chilik-net.yaml
+  - llm-orchestrator-api.yaml
   - llm-orchestrator-web.yaml
   - ingress-llms-chilik-net.yaml
   - job-keycloak-config-cli-llm-orchestrator.yaml
