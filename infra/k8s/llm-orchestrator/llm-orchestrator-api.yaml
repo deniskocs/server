@@ -1,4 +1,6 @@
-# llm-orchestrator API — образ обновляется release-llm-orchestrator-api workflow.
+# llm-orchestrator API — образ: release-llm-orchestrator-api workflow.
+# Том models — hostPath на GPU-ноде ai-server (те же веса, что для vLLM).
+# Том configs — hostPath на ai-server (как ~/llm-orchestrator-configs в docker deploy).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +20,9 @@ spec:
       labels:
         app: llm-orchestrator-api
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: ai-server
+      runtimeClassName: nvidia
       containers:
         - name: api
           image: deniskocs/llm-orchestrator-api:0.0.1
@@ -30,6 +35,11 @@ spec:
               value: /models
             - name: CONFIGS_DIR
               value: /configs
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: configs
+              mountPath: /configs
           readinessProbe:
             httpGet:
               path: /api/health
@@ -42,6 +52,15 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
+      volumes:
+        - name: models
+          hostPath:
+            path: /home/denis/models
+            type: DirectoryOrCreate
+        - name: configs
+          hostPath:
+            path: /home/denis/llm-orchestrator-configs
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

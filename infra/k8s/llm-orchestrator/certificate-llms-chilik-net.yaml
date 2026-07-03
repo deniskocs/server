@@ -1,4 +1,4 @@
-# TLS llms.chilik.net: HTTP-01 через Traefik (Mac nginx :80 → 10.0.0.2:80).
+# TLS llms.chilik.net + api.llms.chilik.net: HTTP-01 через Traefik (Mac nginx :80 → 10.0.0.2:80).
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -13,3 +13,4 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - llms.chilik.net
+    - api.llms.chilik.net

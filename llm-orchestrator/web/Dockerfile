@@ -6,8 +6,8 @@ WORKDIR /app
 
 ENV npm_config_devdir=/tmp/node-gyp
 
-# Baked at build: browser calls API on 10.0.0.3:<port> (set in deploy-orchestrator workflow)
-ARG VITE_API_BASE_URL
+# Baked at build: browser calls orchestrator API (release-llm-orchestrator-web workflow)
+ARG VITE_API_BASE_URL=https://api.llms.chilik.net
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ARG VITE_KEYCLOAK_ISSUER=https://keycloak.chilik.net/realms/llm-orchestrator
 ENV VITE_KEYCLOAK_ISSUER=${VITE_KEYCLOAK_ISSUER}

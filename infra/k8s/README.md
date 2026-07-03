@@ -156,11 +156,12 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 | `llm-orchestrator-realm.json` | Realm, роль `user`, client `llm-orchestrator-web` (public + PKCE) |
 | `job-keycloak-config-cli-llm-orchestrator.yaml` | PostSync Job импорта в platform Keycloak |
 | `namespace-llm-orchestrator.yaml` | Namespace (sync-wave `-10`) |
-| `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt HTTP-01 (sync-wave `6`) |
+| `certificate-llms-chilik-net.yaml` | TLS Let's Encrypt: `llms.chilik.net`, `api.llms.chilik.net` (sync-wave `6`) |
 | `llm-orchestrator-web.yaml` | Deployment + Service; образ — release workflow |
-| `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → Traefik `websecure` (sync-wave `7`) |
+| `ingress-llms-chilik-net.yaml` | Ingress `llms.chilik.net` → web (sync-wave `7`) |
+| `ingress-api-llms-chilik-net.yaml` | Ingress `api.llms.chilik.net` → API :8765 (sync-wave `7`) |
 
-Публичный URL: **https://llms.chilik.net** (`redirectUris` / `webOrigins` в JSON). DNS — `infra/home-lab/route53_record_chilik.tf` (`llms.chilik.net` → `chilik.net`). Локальная разработка: `localhost:5173`, `localhost:8088`. Заходить по **HTTPS**; `http://` без отдельного redirect Ingress не обслуживается.
+Публичные URL: **https://llms.chilik.net** (UI), **https://api.llms.chilik.net** (API). DNS — `infra/home-lab/route53_record_chilik.tf`. Web в CI: `VITE_API_BASE_URL=https://api.llms.chilik.net`. Локальная разработка: `localhost:5173`, API через Vite proxy.
 
 После merge deploy PR: `argocd app sync server`. Проверка сертификата: `kubectl get certificate -n llm-orchestrator`.
 

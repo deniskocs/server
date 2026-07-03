@@ -13,9 +13,9 @@ on:
           - major
           - current
       api_base_url:
-        description: "VITE_API_BASE_URL baked into the frontend (browser → API on GPU host)"
+        description: "VITE_API_BASE_URL baked into the frontend (browser → orchestrator API)"
         required: true
-        default: "http://10.0.0.3:8765"
+        default: "https://api.llms.chilik.net"
         type: string
 
 permissions:
