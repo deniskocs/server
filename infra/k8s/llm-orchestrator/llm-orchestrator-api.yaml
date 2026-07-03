@@ -17,6 +17,8 @@ spec:
       app: llm-orchestrator-api
   template:
     metadata:
+      annotations:
+        chilik.net/redeploy-at: "2026-07-03T23:05:15Z"
       labels:
         app: llm-orchestrator-api
     spec:
