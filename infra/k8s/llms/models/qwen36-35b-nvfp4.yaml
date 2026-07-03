@@ -52,9 +52,7 @@ spec:
               value: "true"
             - name: VLLM_TOOL_CALL_PARSER
               value: "qwen3_coder"
-          resources:
-            limits:
-              nvidia.com/gpu: "1"
+          # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
 ---
 apiVersion: v1
 kind: Service

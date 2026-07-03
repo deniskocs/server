@@ -173,6 +173,8 @@ llms/
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment).
 
+**GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
+
 **Двойной LOCK (по умолчанию не запускается):**
 
 1. В **`infra/k8s/kustomization.yaml`** строка `# - llms/` **закомментирована** — Argo не применяет `llms/`.

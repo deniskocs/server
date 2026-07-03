@@ -50,9 +50,8 @@ spec:
               value: "float16"
             - name: VLLM_GPU_MEMORY_UTILIZATION
               value: "0.35"
-          resources:
-            limits:
-              nvidia.com/gpu: "1"
+          # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
+          # Доступ к GPU через runtimeClassName: nvidia; доля VRAM — VLLM_GPU_MEMORY_UTILIZATION.
 ---
 apiVersion: v1
 kind: Service

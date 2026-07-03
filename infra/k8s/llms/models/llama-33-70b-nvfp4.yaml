@@ -48,9 +48,7 @@ spec:
               value: "0.90"
             - name: VLLM_TENSOR_PARALLEL_SIZE
               value: "1"
-          resources:
-            limits:
-              nvidia.com/gpu: "1"
+          # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
 ---
 apiVersion: v1
 kind: Service
