@@ -147,10 +147,6 @@ kubectl port-forward svc/keycloak 8080:80 -n keycloak
 
 **Не в этом репозитории.** Декларативный realm, clients и dev-user — Argo CD Application **`tzone`**, каталог `tzone/deploy/k8s/keycloak/` (источник: `services/keycloak/infra/realm/tzone-realm.json`).
 
-### Realm `llm-orchestrator` (локально / вне кластера)
-
-Realm JSON для web UI — **`llm-orchestrator/llm-orchestrator-realm.json`** (роль `user`, client `llm-orchestrator-web`, PKCE). Импорт в Keycloak вручную или через config-cli при локальной разработке; **из GitOps кластера убран**.
-
 ### vLLM models (`llms/`)
 
 Каталог **`infra/k8s/llms/`** — GitOps для vLLM на ai-server.
@@ -159,11 +155,6 @@ Realm JSON для web UI — **`llm-orchestrator/llm-orchestrator-realm.json`** 
 llms/
   kustomization.yaml
   namespace-llm-orchestrator.yaml
-  configs/                    # исходные *.env (источник env для models/*.yaml)
-    gpt-oss-120b.env
-    llama-33-70b-nvfp4.env
-    qwen36-35b-nvfp4.env
-    qwen25-7b-awq.env
   volumes/                    # hostPath patches (единое место для путей)
     vllm-models-hostpath.patch.yaml
   models/
@@ -180,7 +171,7 @@ llms/
 | `models/qwen36-35b-nvfp4.yaml` | `RedHatAI/Qwen3.6-35B-A3B-NVFP4` | 8003 | `vllm-qwen36-35b-nvfp4:8003` |
 | `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | 8010 | `vllm-qwen25-7b-awq:8010` |
 
-Параметры vLLM в Git дублируются: **`configs/<model>.env`** (редактируй env) и **`models/<model>.yaml`** (env в Deployment — синхронизируй при изменении конфига).
+Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment).
 
 **Двойной LOCK (по умолчанию не запускается):**
 
@@ -191,7 +182,7 @@ llms/
 
 **Выключить:** обратные шаги; prune удалит объекты, убранные из resources.
 
-После merge: `argocd app sync server`. Prune удалит бывшие ресурсы `infra/k8s/llm-orchestrator/` (web, API, ingress, cert, Keycloak import job).
+После merge: `argocd app sync server`.
 
 Если sync завис на `keycloak-keycloak-config-cli` — это **старый** Helm Job (образ `bitnami/keycloak-config-cli` снят). Удалить и sync снова:
 

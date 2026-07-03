@@ -1,5 +1,5 @@
 # Сборка и push образа vLLM «Decaf» (llm-orchestrator/vllm-runner/Dockerfile.decarf) →
-# deniskocs/core:vllm-runner-1.0.0 (тот же тег, что ожидает оркестратор). Тяжёлая job.
+# deniskocs/core:vllm-runner-1.0.0 (тег в infra/k8s/llms/models/*.yaml).
 name: Build and push vLLM runner (Decaf)
 
 on:
