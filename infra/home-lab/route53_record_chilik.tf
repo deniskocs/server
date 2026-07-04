@@ -51,22 +51,6 @@ resource "aws_route53_record" "chilik_net_keycloak" {
   zone_id = aws_route53_zone.chilik_net.zone_id
 }
 
-resource "aws_route53_record" "chilik_net_llms" {
-  name    = "llms.chilik.net"
-  records = ["chilik.net"]
-  ttl     = "300"
-  type    = "CNAME"
-  zone_id = aws_route53_zone.chilik_net.zone_id
-}
-
-resource "aws_route53_record" "chilik_net_api_llms" {
-  name    = "api.llms.chilik.net"
-  records = ["chilik.net"]
-  ttl     = "300"
-  type    = "CNAME"
-  zone_id = aws_route53_zone.chilik_net.zone_id
-}
-
 # --- Apex ---
 
 resource "aws_route53_record" "chilik_net_apex" {
