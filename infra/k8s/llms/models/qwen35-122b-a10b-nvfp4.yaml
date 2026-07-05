@@ -56,6 +56,9 @@ metadata:
     app: vllm-qwen35-122b-a10b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
+    # Обход SSA ComparisonError при смене port 8011→80 (см. infra/k8s/README.md § llms).
+    argocd.argoproj.io/compare-options: ServerSideDiff=false
+    argocd.argoproj.io/sync-options: Replace=true
     llm-orchestrator.chilik.net/enabled: "true"
 spec:
   type: ClusterIP

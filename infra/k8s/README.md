@@ -193,6 +193,15 @@ llms/
 
 После merge: `argocd app sync server`.
 
+**Argo ComparisonError на Service vLLM (port 8011→80):** SSA держит старый managed field; ServerSideDiff падает с `null element` в `.spec.ports`. **Один раз** удалить Service и sync:
+
+```bash
+kubectl delete svc vllm-qwen35-122b-a10b-nvfp4 -n llm-orchestrator
+argocd app sync server
+```
+
+На qwen35 Service стоят `compare-options: ServerSideDiff=false` и `sync-options: Replace=true` до стабилизации. После успешного sync аннотации можно убрать.
+
 Если sync завис на `keycloak-keycloak-config-cli` — это **старый** Helm Job (образ `bitnami/keycloak-config-cli` снят). Удалить и sync снова:
 
 ```bash
