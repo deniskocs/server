@@ -1,5 +1,5 @@
 # RedHatAI Qwen3.6-35B-A3B NVFP4. Active model.
-# RTX PRO 6000 ~97 GiB; VLLM_GPU_MEMORY_UTILIZATION=0.3 — делим GPU с transcribe (Whisper large-v3).
+# RTX PRO 6000 ~97 GiB; VLLM_GPU_MEMORY_UTILIZATION=0.7 — vLLM + transcribe (Whisper large-v3) на одной GPU.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,13 +40,19 @@ spec:
             - name: API_KEY
               value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
-              value: "32768"
+              value: "16384"
             - name: VLLM_GPU_MEMORY_UTILIZATION
-              value: "0.3"
+              value: "0.7"
+            - name: VLLM_KV_CACHE_DTYPE
+              value: "fp8"
             - name: VLLM_MOE_BACKEND
               value: "flashinfer_cutlass"
             - name: VLLM_REASONING_PARSER
               value: "qwen3"
+            - name: VLLM_LANGUAGE_MODEL_ONLY
+              value: "true"
+            - name: VLLM_ENFORCE_EAGER
+              value: "true"
             - name: VLLM_ENABLE_AUTO_TOOL_CHOICE
               value: "true"
             - name: VLLM_TOOL_CALL_PARSER
