@@ -176,7 +176,7 @@ llms/
 
 Все vLLM Service слушают порт **80** (`protocol: TCP` в `models/*.yaml`). `containerPort: 80` — patch в `llms/volumes/`.
 
-**Локальный доступ (без Ingress):** активная модель qwen35 пробрасывает **hostPort 8030** на `ai-server` → `http://10.0.0.3:8030/v1` (или `localhost:8030` на самой ноде). In-cluster DNS и analyzer — по-прежнему `…svc.cluster.local` на порту 80.
+**Локальный доступ (без Ingress):** активная модель qwen36 пробрасывает **hostPort 8030** на `ai-server` → `http://10.0.0.3:8030/v1` (или `localhost:8030` на самой ноде). In-cluster DNS и analyzer — по-прежнему `…svc.cluster.local` на порту 80.
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`; `HF_TOKEN` — patch в `llms/volumes/`.
 
@@ -191,7 +191,7 @@ argocd app sync server
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
-**qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`**. qwen35: `VLLM_MAX_MODEL_LEN=16384`, `VLLM_LANGUAGE_MODEL_ONLY=true`, `VLLM_ENFORCE_EAGER=true` (без cudagraph profile +2 GiB на cold start).
+**qwen36 + transcribe:** на ai-server одновременно vLLM qwen36 (`VLLM_GPU_MEMORY_UTILIZATION=0.3`, `VLLM_MAX_MODEL_LEN=32768`) и **`learn-english/transcribe` `replicas: 1`** с **`WHISPER_MODEL=large-v3`**. qwen35 (122B) монополизирует GPU — transcribe выключать (`replicas: 0`).
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 

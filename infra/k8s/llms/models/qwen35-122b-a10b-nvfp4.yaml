@@ -1,5 +1,4 @@
-# RedHatAI Qwen3.5-122B-A10B NVFP4. Active model.
-# RTX PRO 6000 ~97 GiB; transcribe replicas: 0. Text-only: --language-model-only (RedHat HF).
+# RedHatAI Qwen3.5-122B-A10B NVFP4. LOCK: enabled=false, replicas=0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,13 +8,11 @@ metadata:
     app: vllm-qwen35-122b-a10b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "true"
-    # SSA: live Deployment имел rollingUpdate; Recreate несовместим — Replace на sync.
+    llm-orchestrator.chilik.net/enabled: "false"
     argocd.argoproj.io/compare-options: ServerSideDiff=false
     argocd.argoproj.io/sync-options: Replace=true
 spec:
-  replicas: 1
-  # Одна GPU на ai-server — сначала удалить старый pod, потом новый (освободить VRAM).
+  replicas: 0
   strategy:
     type: Recreate
   selector:
@@ -68,10 +65,9 @@ metadata:
     app: vllm-qwen35-122b-a10b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    # Обход SSA ComparisonError при смене port 8011→80 (см. infra/k8s/README.md § llms).
     argocd.argoproj.io/compare-options: ServerSideDiff=false
     argocd.argoproj.io/sync-options: Replace=true
-    llm-orchestrator.chilik.net/enabled: "true"
+    llm-orchestrator.chilik.net/enabled: "false"
 spec:
   type: ClusterIP
   selector:

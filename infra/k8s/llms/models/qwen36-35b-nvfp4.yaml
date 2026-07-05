@@ -1,4 +1,5 @@
-# RedHatAI Qwen3.6-35B-A3B NVFP4. LOCK: enabled=false, replicas=0.
+# RedHatAI Qwen3.6-35B-A3B NVFP4. Active model.
+# RTX PRO 6000 ~97 GiB; VLLM_GPU_MEMORY_UTILIZATION=0.3 — делим GPU с transcribe (Whisper large-v3).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,9 +9,12 @@ metadata:
     app: vllm-qwen36-35b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    llm-orchestrator.chilik.net/enabled: "true"
+    # SSA: live Deployment имел rollingUpdate; Recreate несовместим — Replace на sync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=false
+    argocd.argoproj.io/sync-options: Replace=true
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -47,6 +51,11 @@ spec:
               value: "true"
             - name: VLLM_TOOL_CALL_PARSER
               value: "qwen3_coder"
+          ports:
+            - name: vllm
+              containerPort: 80
+              hostPort: 8030
+              protocol: TCP
           # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
 ---
 apiVersion: v1
@@ -58,7 +67,9 @@ metadata:
     app: vllm-qwen36-35b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    argocd.argoproj.io/compare-options: ServerSideDiff=false
+    argocd.argoproj.io/sync-options: Replace=true
+    llm-orchestrator.chilik.net/enabled: "true"
 spec:
   type: ClusterIP
   selector:
