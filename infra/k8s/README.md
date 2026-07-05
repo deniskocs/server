@@ -182,6 +182,8 @@ llms/
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
+**qwen35 + transcribe:** на ai-server заданы `VLLM_MAX_MODEL_LEN=8192` и `VLLM_GPU_MEMORY_UTILIZATION=0.76` — запас под Whisper ~10 GiB. Если transcribe выключен, в `models/qwen35-122b-a10b-nvfp4.yaml` можно поднять до 16384 / 0.82–0.84.
+
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
 **Двойной LOCK (по умолчанию не запускается):**

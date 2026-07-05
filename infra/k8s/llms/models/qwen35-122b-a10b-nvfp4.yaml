@@ -1,6 +1,6 @@
 # RedHatAI Qwen3.5-122B-A10B NVFP4. Active model.
-# VRAM ~79 GiB при 0.82×97 GiB (RTX PRO 6000); ~17 GiB — transcribe + резерв.
-# Если не хватает KV-cache — поднять VLLM_GPU_MEMORY_UTILIZATION до 0.84, не выше.
+# Совместно с transcribe (~10 GiB) на RTX PRO 6000 (~97 GiB): max-model-len 8192, utilization 0.76.
+# Веса ~71 GiB; пик cold start ниже за счёт меньшего KV profile. Без transcribe можно 16384 / 0.82–0.84.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,9 +36,9 @@ spec:
             - name: API_KEY
               value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
-              value: "16384"
+              value: "8192"
             - name: VLLM_GPU_MEMORY_UTILIZATION
-              value: "0.82"
+              value: "0.76"
             - name: VLLM_KV_CACHE_DTYPE
               value: "fp8"
             - name: VLLM_MOE_BACKEND
