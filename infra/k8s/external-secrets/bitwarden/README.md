@@ -8,6 +8,10 @@
 
 Позже можно завести отдельный BSM project **`cluster`**, перенести секреты и обновить `projectID` здесь и в `keycloak/external-secret-keycloak.yaml`.
 
+| Имя в BSM | K8s Secret | Назначение |
+|-----------|------------|------------|
+| `huggingface-token` | `llm-orchestrator/huggingface-secrets` → `token` | Hugging Face API token (vLLM download, gated models) |
+
 ## K8s bootstrap (вне git)
 
 ```bash

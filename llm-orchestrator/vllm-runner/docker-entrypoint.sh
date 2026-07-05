@@ -66,15 +66,43 @@ if [ -n "${VLLM_KV_CACHE_DTYPE:-}" ]; then
     VLLM_ARGS="$VLLM_ARGS --kv-cache-dtype $VLLM_KV_CACHE_DTYPE"
 fi
 
-if [ ! -d "$MODEL_PATH" ]; then
-    echo "❌ Error: Model directory not found at $MODEL_PATH" >&2
-    echo "Expected weights under /models (mount host model dir) for DEFAULT_MODEL_NAME/MODEL_NAME=$MODEL_ID" >&2
-    if [ -d "/models" ] && [ "$(ls -A /models 2>/dev/null)" ]; then
-        echo "Available in /models:" >&2
-        ls -la /models 2>&1
-    else
-        echo "Directory /models is empty or missing" >&2
+model_ready() {
+    [ -d "$MODEL_PATH" ] && [ -n "$(ls -A "$MODEL_PATH" 2>/dev/null)" ] \
+        && { [ -f "$MODEL_PATH/config.json" ] || [ -f "$MODEL_PATH/config.yaml" ] || [ -n "$(find "$MODEL_PATH" -maxdepth 2 -name '*.safetensors' -print -quit 2>/dev/null)" ]; }
+}
+
+HF_AUTO_DOWNLOAD="${HF_AUTO_DOWNLOAD:-true}"
+
+if ! model_ready; then
+    if [ "$HF_AUTO_DOWNLOAD" != "true" ] && [ "$HF_AUTO_DOWNLOAD" != "1" ]; then
+        echo "❌ Error: Model directory not found at $MODEL_PATH" >&2
+        echo "Set HF_AUTO_DOWNLOAD=true to download from Hugging Face, or pre-populate /models/$MODEL_ID" >&2
+        exit 1
     fi
+    echo "⬇️  Model missing at $MODEL_PATH — downloading $MODEL_ID from Hugging Face..."
+    mkdir -p "$MODEL_PATH"
+    MODEL_ID="$MODEL_ID" MODEL_PATH="$MODEL_PATH" python3 - <<'PY'
+import os
+import sys
+from huggingface_hub import snapshot_download
+
+repo_id = os.environ["MODEL_ID"]
+local_dir = os.environ["MODEL_PATH"]
+token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or None
+
+print(f"Downloading {repo_id} → {local_dir}", flush=True)
+snapshot_download(
+    repo_id=repo_id,
+    local_dir=local_dir,
+    token=token,
+    local_dir_use_symlinks=False,
+)
+print("Download complete.", flush=True)
+PY
+fi
+
+if ! model_ready; then
+    echo "❌ Error: Model still not ready at $MODEL_PATH after download" >&2
     exit 1
 fi
 

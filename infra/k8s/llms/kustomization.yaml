@@ -8,6 +8,7 @@ components:
 
 resources:
   - namespace-llm-orchestrator.yaml
+  - external-secret-huggingface.yaml
   # LOCK: раскомментируй модель + enabled=true + replicas=1 в её yaml.
   # - models/gpt-oss-120b.yaml
   # - models/llama-33-70b-nvfp4.yaml
