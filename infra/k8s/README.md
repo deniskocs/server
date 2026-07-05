@@ -191,7 +191,7 @@ argocd app sync server
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
-**qwen36 + transcribe:** на ai-server одновременно vLLM qwen36 (`VLLM_GPU_MEMORY_UTILIZATION=0.7`, `VLLM_MAX_MODEL_LEN=16384`, `VLLM_LANGUAGE_MODEL_ONLY=true`, `VLLM_ENFORCE_EAGER=true`, `VLLM_KV_CACHE_DTYPE=fp8`) и **`learn-english/transcribe` `replicas: 1`** с **`WHISPER_MODEL=large-v3`**. Без `--language-model-only` qwen36 гоняет vision warmup ~10 мин. qwen35 (122B) монополизирует GPU — transcribe выключать (`replicas: 0`).
+**qwen36 + transcribe:** на ai-server одновременно vLLM qwen36 (`VLLM_GPU_MEMORY_UTILIZATION=0.7`, `VLLM_MAX_MODEL_LEN=32768`, `VLLM_LANGUAGE_MODEL_ONLY=true`, `VLLM_KV_CACHE_DTYPE=fp8`; без `enforce-eager` — CUDA graphs для скорости) и **`learn-english/transcribe` `replicas: 1`** с **`WHISPER_MODEL=large-v3`**. Без `--language-model-only` qwen36 гоняет vision warmup ~10 мин. qwen35 (122B) монополизирует GPU — transcribe выключать (`replicas: 0`).
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
