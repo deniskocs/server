@@ -166,13 +166,15 @@ llms/
     qwen25-7b-awq.yaml
 ```
 
-| Файл | Модель | PORT | Service DNS |
-|------|--------|------|-------------|
-| `models/gpt-oss-120b.yaml` | `openai/gpt-oss-120b` | 8000 | `vllm-gpt-oss-120b:8000` |
-| `models/llama-33-70b-nvfp4.yaml` | `nvidia/Llama-3.3-70B-Instruct-NVFP4` | 8002 | `vllm-llama-33-70b-nvfp4:8002` |
-| `models/qwen36-35b-nvfp4.yaml` | `RedHatAI/Qwen3.6-35B-A3B-NVFP4` | 8003 | `vllm-qwen36-35b-nvfp4:8003` |
-| `models/qwen35-122b-a10b-nvfp4.yaml` | `RedHatAI/Qwen3.5-122B-A10B-NVFP4` | 8011 | `vllm-qwen35-122b-a10b-nvfp4:8011` |
-| `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | 8010 | `vllm-qwen25-7b-awq:8010` |
+| Файл | Модель | Service DNS |
+|------|--------|-------------|
+| `models/gpt-oss-120b.yaml` | `openai/gpt-oss-120b` | `vllm-gpt-oss-120b` |
+| `models/llama-33-70b-nvfp4.yaml` | `nvidia/Llama-3.3-70B-Instruct-NVFP4` | `vllm-llama-33-70b-nvfp4` |
+| `models/qwen36-35b-nvfp4.yaml` | `RedHatAI/Qwen3.6-35B-A3B-NVFP4` | `vllm-qwen36-35b-nvfp4` |
+| `models/qwen35-122b-a10b-nvfp4.yaml` | `RedHatAI/Qwen3.5-122B-A10B-NVFP4` | `vllm-qwen35-122b-a10b-nvfp4` |
+| `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | `vllm-qwen25-7b-awq` |
+
+Все vLLM Service слушают порт **80** — задаётся в `llms/volumes/` (patch на Deployment + Service), не в `models/*.yaml`.
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment).
 

@@ -1,4 +1,4 @@
-# Llama 3.3 Instruct 70B NVFP4 (PORT 8002). LOCK: enabled=false, replicas=0.
+# Llama 3.3 Instruct 70B NVFP4. LOCK: enabled=false, replicas=0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,14 +26,9 @@ spec:
         - name: vllm
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8002
           env:
             - name: HOST
               value: "0.0.0.0"
-            - name: PORT
-              value: "8002"
             - name: API_KEY
               value: "localkey"
             - name: DEFAULT_MODEL_NAME
@@ -64,7 +59,3 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-llama-33-70b-nvfp4
-  ports:
-    - name: http
-      port: 8002
-      targetPort: http

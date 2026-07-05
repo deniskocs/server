@@ -1,4 +1,4 @@
-# RedHatAI Qwen3.6-35B-A3B NVFP4 (PORT 8003). LOCK: enabled=false, replicas=0.
+# RedHatAI Qwen3.6-35B-A3B NVFP4. LOCK: enabled=false, replicas=0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,14 +26,9 @@ spec:
         - name: vllm
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8003
           env:
             - name: HOST
               value: "0.0.0.0"
-            - name: PORT
-              value: "8003"
             - name: API_KEY
               value: "localkey"
             - name: DEFAULT_MODEL_NAME
@@ -68,7 +63,3 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-qwen36-35b-nvfp4
-  ports:
-    - name: http
-      port: 8003
-      targetPort: http

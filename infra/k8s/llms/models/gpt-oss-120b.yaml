@@ -1,4 +1,4 @@
-# OpenAI GPT-OSS-120B (PORT 8000). LOCK: enabled=false, replicas=0.
+# OpenAI GPT-OSS-120B. LOCK: enabled=false, replicas=0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,14 +26,9 @@ spec:
         - name: vllm
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8000
           env:
             - name: HOST
               value: "0.0.0.0"
-            - name: PORT
-              value: "8000"
             - name: API_KEY
               value: "localkey"
             - name: DEFAULT_MODEL_NAME
@@ -64,7 +59,3 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-gpt-oss-120b
-  ports:
-    - name: http
-      port: 8000
-      targetPort: http

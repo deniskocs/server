@@ -13,6 +13,9 @@ spec:
             type: Directory
       containers:
         - name: vllm
+          ports:
+            - name: http
+              containerPort: 80
           volumeMounts:
             - name: models
               mountPath: /models

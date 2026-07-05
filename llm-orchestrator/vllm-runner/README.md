@@ -1,6 +1,6 @@
 # vLLM runner (Decaf)
 
-Docker-образ с **vLLM** OpenAI API и `docker-entrypoint.sh`. Запуск — **только через `-e`**: `DEFAULT_MODEL_NAME` или `MODEL_NAME`, `PORT`, `API_KEY`, `SERVED_MODEL_NAME`, `VLLM_*`, `HOST`.
+Docker-образ с **vLLM** OpenAI API и `docker-entrypoint.py`. Запуск — **только через `-e`**: `DEFAULT_MODEL_NAME`, `API_KEY`, `SERVED_MODEL_NAME`, `VLLM_*`, `HOST`. API слушает порт **80**.
 
 **Модель на диске:** `/models/<DEFAULT_MODEL_NAME>` (hostPath `/home/denis/models` в k8s). Если каталог пустой или нет весов — entrypoint **скачивает** репозиторий с Hugging Face (`HF_AUTO_DOWNLOAD=true` по умолчанию). Для gated-моделей задай `HF_TOKEN` или `HUGGING_FACE_HUB_TOKEN`.
 

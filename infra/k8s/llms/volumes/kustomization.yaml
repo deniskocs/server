@@ -6,3 +6,6 @@ patches:
   - path: vllm-models-hostpath.patch.yaml
     target:
       kind: Deployment
+  - path: vllm-service-http.patch.yaml
+    target:
+      kind: Service

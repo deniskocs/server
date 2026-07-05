@@ -1,4 +1,4 @@
-# Qwen2.5 7B Instruct AWQ (PORT 8010). LOCK: enabled=false, replicas=0.
+# Qwen2.5 7B Instruct AWQ. LOCK: enabled=false, replicas=0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,14 +26,9 @@ spec:
         - name: vllm
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8010
           env:
             - name: HOST
               value: "0.0.0.0"
-            - name: PORT
-              value: "8010"
             - name: API_KEY
               value: "localkey"
             - name: CUDA_VISIBLE_DEVICES
@@ -67,7 +62,3 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-qwen25-7b-awq
-  ports:
-    - name: http
-      port: 8010
-      targetPort: http
