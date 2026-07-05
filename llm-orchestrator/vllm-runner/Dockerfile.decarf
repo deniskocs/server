@@ -28,7 +28,6 @@ RUN chmod +x /docker-entrypoint.py
 
 ENV CUDA_VISIBLE_DEVICES=0
 ENV PYTORCH_ALLOC_CONF=expandable_segments:True
-ENV HOST=0.0.0.0
 
 EXPOSE 80
 

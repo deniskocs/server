@@ -29,8 +29,6 @@ spec:
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
           env:
-            - name: HOST
-              value: "0.0.0.0"
             - name: API_KEY
               value: "localkey"
             - name: DEFAULT_MODEL_NAME

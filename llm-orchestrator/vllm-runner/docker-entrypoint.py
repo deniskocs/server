@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 
+LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = "80"
 
 
@@ -78,8 +79,7 @@ def _vllm_optional_args() -> list[str]:
 #   API_KEY — ключ для заголовка Authorization; vLLM отклоняет запросы без него.
 #
 # Сервер и модель
-#   HOST — адрес bind (по умолчанию 0.0.0.0).
-#   Порт API — всегда 80 (константа LISTEN_PORT).
+#   Bind 0.0.0.0:80 (константы LISTEN_HOST, LISTEN_PORT).
 #   SERVED_MODEL_NAME — имя модели в /v1/models и в поле model запросов; если не задано —
 #     последний сегмент пути (Qwen3.5-122B-A10B-NVFP4).
 #   CUDA_VISIBLE_DEVICES — какие GPU видит процесс (задаётся в Dockerfile/k8s, не vLLM-флаг).
@@ -104,7 +104,6 @@ def _vllm_optional_args() -> list[str]:
 def main() -> None:
     model_id = _require("DEFAULT_MODEL_NAME")
     api_key = _require("API_KEY")
-    host = _env("HOST", "0.0.0.0")
     served_model_name = _env("SERVED_MODEL_NAME") or model_id.rsplit("/", 1)[-1]
 
     model_path = Path("/models") / model_id
@@ -136,7 +135,7 @@ def main() -> None:
     print(f"Served model name: {served_model_name}")
     print(f"CUDA_VISIBLE_DEVICES: {_env('CUDA_VISIBLE_DEVICES', '')}")
     print(f"Port: {LISTEN_PORT}")
-    print(f"Host: {host}")
+    print(f"Host: {LISTEN_HOST}")
 
     cmd = [
         sys.executable,
@@ -150,7 +149,7 @@ def main() -> None:
         "--served-model-name",
         served_model_name,
         "--host",
-        host,
+        LISTEN_HOST,
         "--port",
         LISTEN_PORT,
     ]
