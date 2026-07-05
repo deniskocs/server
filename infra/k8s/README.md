@@ -182,7 +182,7 @@ llms/
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
-**qwen35 + transcribe:** на ai-server заданы `VLLM_MAX_MODEL_LEN=8192`, `VLLM_GPU_MEMORY_UTILIZATION=0.76`, `VLLM_ENFORCE_EAGER=true`, `VLLM_LIMIT_MM_PER_PROMPT={"image":0,"video":0}` — без CUDA graphs и без vision warmup (~600s), чтобы cudagraph profile не требовал +2 GiB поверх Whisper ~10 GiB. Образ `vllm-runner` должен включать entrypoint с этими env (push в `llm-orchestrator/vllm-runner/` → CI rebuild). Без transcribe можно 16384 / 0.82–0.84 и убрать enforce-eager / limit-mm.
+**qwen35 + transcribe:** Whisper на transcribe отключён (`WHISPER_LOAD_MODEL=false`, без GPU) — карта под vLLM. qwen35: `16384` / `0.84`. Чтобы снова включить транскрипцию на GPU — вернуть `WHISPER_LOAD_MODEL=true`, `runtimeClassName: nvidia`, `nvidia.com/gpu: 1` в `learn-english` transcribe и снизить utilization qwen35.
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
