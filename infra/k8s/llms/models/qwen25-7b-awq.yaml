@@ -11,6 +11,8 @@ metadata:
     llm-orchestrator.chilik.net/enabled: "false"
 spec:
   replicas: 0
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: vllm-qwen25-7b-awq

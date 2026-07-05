@@ -12,6 +12,9 @@ metadata:
     llm-orchestrator.chilik.net/enabled: "true"
 spec:
   replicas: 1
+  # Одна GPU на ai-server — сначала удалить старый pod, потом новый (освободить VRAM).
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: vllm-qwen35-122b-a10b-nvfp4
@@ -36,8 +39,6 @@ spec:
               value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
               value: "16384"
-            - name: VLLM_GPU_MEMORY_UTILIZATION
-              value: "0.84"
             - name: VLLM_KV_CACHE_DTYPE
               value: "fp8"
             - name: VLLM_MOE_BACKEND

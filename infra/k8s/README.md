@@ -180,9 +180,11 @@ llms/
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`; `HF_TOKEN` — patch в `llms/volumes/`.
 
+**Deploy (одна GPU):** у всех vLLM Deployment — `strategy.type: Recreate` (сначала удаляется старый pod, потом поднимается новый; RollingUpdate держал бы два pod и делил VRAM).
+
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
-**qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`** (Argo selfHeal; не `kubectl scale`). qwen35: `16384` / `0.84`. Включить transcribe: `replicas: 1` и при необходимости снизить utilization qwen35.
+**qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`**. qwen35: `VLLM_MAX_MODEL_LEN=16384`, без `VLLM_GPU_MEMORY_UTILIZATION` (дефолт vLLM ~0.9). Включить transcribe: `replicas: 1` и задать utilization в yaml.
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
