@@ -83,8 +83,7 @@ def _vllm_optional_args() -> list[str]:
 #   Bind 0.0.0.0:80 (константы LISTEN_HOST, LISTEN_PORT).
 #   CUDA_VISIBLE_DEVICES — какие GPU видит процесс (задаётся в Dockerfile/k8s, не vLLM-флаг).
 #
-# Hugging Face (скачивание весов при первом старте)
-#   HF_AUTO_DOWNLOAD — true/1 (по умолчанию): скачать snapshot, если каталог пустой или без весов.
+# Hugging Face (скачивание весов при первом старте, всегда включено)
 #   HF_TOKEN | HUGGING_FACE_HUB_TOKEN — токен HF для gated/private репозиториев.
 #
 # Параметры vLLM (опционально; пробрасываются как CLI-флаги api_server)
@@ -106,17 +105,8 @@ def main() -> None:
     api_key = _require("API_KEY")
 
     model_path = Path("/models") / model_id
-    auto_download = _env("HF_AUTO_DOWNLOAD", "true")
 
     if not _model_ready(model_path):
-        if auto_download not in ("true", "1"):
-            print(f"❌ Error: Model directory not found at {model_path}", file=sys.stderr)
-            print(
-                f"Set HF_AUTO_DOWNLOAD=true to download from Hugging Face, "
-                f"or pre-populate /models/{model_id}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
         print(
             f"⬇️  Model missing at {model_path} — downloading {model_id} from Hugging Face...",
             flush=True,
