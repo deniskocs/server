@@ -174,7 +174,7 @@ llms/
 | `models/qwen35-122b-a10b-nvfp4.yaml` | `RedHatAI/Qwen3.5-122B-A10B-NVFP4` | `vllm-qwen35-122b-a10b-nvfp4` |
 | `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | `vllm-qwen25-7b-awq` |
 
-Все vLLM Service слушают порт **80** — задаётся в `llms/volumes/` (patch на Deployment + Service), не в `models/*.yaml`.
+Все vLLM Service слушают порт **80** (`protocol: TCP` в `models/*.yaml`). `containerPort: 80` — patch в `llms/volumes/`.
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`; `HF_TOKEN` — patch в `llms/volumes/`.
 

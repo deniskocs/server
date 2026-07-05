@@ -61,3 +61,8 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-qwen35-122b-a10b-nvfp4
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

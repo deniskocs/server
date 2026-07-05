@@ -57,3 +57,8 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-llama-33-70b-nvfp4
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

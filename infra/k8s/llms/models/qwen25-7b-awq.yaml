@@ -58,3 +58,8 @@ spec:
   type: ClusterIP
   selector:
     app: vllm-qwen25-7b-awq
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
