@@ -3,11 +3,13 @@
 # Base: PyTorch / CUDA (deniskocs/core:server-base-0.1.0).
 FROM deniskocs/core:server-base-0.1.0
 
-# NVFP4 (FlashInfer sm_120) JIT-compiles CUDA kernels on first start; runtime base has no nvcc.
+# NVFP4 (FlashInfer sm_120) JIT-compiles CUDA kernels on first start; runtime base has no nvcc/nvrtc.
+# deep_gemm_jit_setup.cu includes <nvrtc.h> — needs cuda-nvrtc-dev, not just cuda-nvcc.
 # Align libcublas with -dev (runtime image pins an older libcublas-12-8).
 RUN apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages \
     libcublas-12-8 \
     cuda-nvcc-12-8 \
+    cuda-nvrtc-dev-12-8 \
     libcurand-dev-12-8 \
     libcublas-dev-12-8 \
     ninja-build \
