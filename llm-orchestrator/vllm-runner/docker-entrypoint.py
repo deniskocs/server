@@ -76,12 +76,11 @@ def _vllm_optional_args() -> list[str]:
 # Обязательные
 #   DEFAULT_MODEL_NAME — ID репозитория Hugging Face и подкаталог под /models
 #     (например RedHatAI/Qwen3.5-122B-A10B-NVFP4 → /models/RedHatAI/Qwen3.5-122B-A10B-NVFP4).
+#   SERVED_MODEL_NAME — имя модели в /v1/models и в поле model запросов (должно совпадать у клиентов).
 #   API_KEY — ключ для заголовка Authorization; vLLM отклоняет запросы без него.
 #
-# Сервер и модель
+# Сервер
 #   Bind 0.0.0.0:80 (константы LISTEN_HOST, LISTEN_PORT).
-#   SERVED_MODEL_NAME — имя модели в /v1/models и в поле model запросов; если не задано —
-#     последний сегмент пути (Qwen3.5-122B-A10B-NVFP4).
 #   CUDA_VISIBLE_DEVICES — какие GPU видит процесс (задаётся в Dockerfile/k8s, не vLLM-флаг).
 #
 # Hugging Face (скачивание весов при первом старте)
@@ -103,8 +102,8 @@ def _vllm_optional_args() -> list[str]:
 
 def main() -> None:
     model_id = _require("DEFAULT_MODEL_NAME")
+    served_model_name = _require("SERVED_MODEL_NAME")
     api_key = _require("API_KEY")
-    served_model_name = _env("SERVED_MODEL_NAME") or model_id.rsplit("/", 1)[-1]
 
     model_path = Path("/models") / model_id
     auto_download = _env("HF_AUTO_DOWNLOAD", "true")

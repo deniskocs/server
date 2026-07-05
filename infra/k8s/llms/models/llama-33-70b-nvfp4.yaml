@@ -27,12 +27,12 @@ spec:
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
           env:
-            - name: API_KEY
-              value: "localkey"
             - name: DEFAULT_MODEL_NAME
               value: "nvidia/Llama-3.3-70B-Instruct-NVFP4"
             - name: SERVED_MODEL_NAME
               value: "llama-3.3-70b-instruct-fp4"
+            - name: API_KEY
+              value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
               value: "4096"
             - name: VLLM_DTYPE

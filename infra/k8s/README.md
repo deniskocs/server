@@ -176,7 +176,7 @@ llms/
 
 Все vLLM Service слушают порт **80** — задаётся в `llms/volumes/` (patch на Deployment + Service), не в `models/*.yaml`.
 
-Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment).
+Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`.
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 

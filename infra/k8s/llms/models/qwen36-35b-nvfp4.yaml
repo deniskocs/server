@@ -27,12 +27,12 @@ spec:
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
           env:
-            - name: API_KEY
-              value: "localkey"
             - name: DEFAULT_MODEL_NAME
               value: "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
             - name: SERVED_MODEL_NAME
               value: "RedHatAI/Qwen3.6-35B-A3B-NVFP4"
+            - name: API_KEY
+              value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
               value: "32768"
             - name: VLLM_GPU_MEMORY_UTILIZATION

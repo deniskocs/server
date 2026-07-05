@@ -27,12 +27,12 @@ spec:
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
           env:
-            - name: API_KEY
-              value: "localkey"
             - name: DEFAULT_MODEL_NAME
               value: "openai/gpt-oss-120b"
             - name: SERVED_MODEL_NAME
               value: "openai/gpt-oss-120b"
+            - name: API_KEY
+              value: "localkey"
             - name: VLLM_MAX_MODEL_LEN
               value: "131072"
             - name: VLLM_GPU_MEMORY_UTILIZATION

@@ -27,14 +27,14 @@ spec:
           image: deniskocs/core:vllm-runner-1.0.0
           imagePullPolicy: Always
           env:
-            - name: API_KEY
-              value: "localkey"
-            - name: CUDA_VISIBLE_DEVICES
-              value: "0"
             - name: DEFAULT_MODEL_NAME
               value: "Qwen/Qwen2.5-7B-Instruct-AWQ"
             - name: SERVED_MODEL_NAME
               value: "Qwen2.5-7B-Instruct-AWQ"
+            - name: API_KEY
+              value: "localkey"
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
             - name: VLLM_QUANTIZATION
               value: "awq_marlin"
             - name: VLLM_MAX_MODEL_LEN
