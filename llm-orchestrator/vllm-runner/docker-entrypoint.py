@@ -73,6 +73,8 @@ def _vllm_optional_args() -> list[str]:
         args.append("--enable-auto-tool-choice")
     if _env("VLLM_ENFORCE_EAGER") == "true":
         args.append("--enforce-eager")
+    if _env("VLLM_LANGUAGE_MODEL_ONLY") == "true":
+        args.append("--language-model-only")
     return args
 
 
@@ -100,8 +102,9 @@ def _vllm_optional_args() -> list[str]:
 #   VLLM_REASONING_PARSER — парсер reasoning-блоков (qwen3 для Qwen3).
 #   VLLM_ENABLE_AUTO_TOOL_CHOICE — true: включить --enable-auto-tool-choice.
 #   VLLM_TOOL_CALL_PARSER — парсер tool calls в ответах модели.
-#   VLLM_ENFORCE_EAGER — true: без CUDA graphs (меньше VRAM на cold start, нужно с transcribe).
+#   VLLM_ENFORCE_EAGER — true: без CUDA graphs (меньше VRAM на cold start).
 #   VLLM_LIMIT_MM_PER_PROMPT — JSON, напр. {"image": 0, "video": 0} — без vision warmup.
+#   VLLM_LANGUAGE_MODEL_ONLY — true: text-only (RedHat qwen35 NVFP4; без vision encoder).
 
 
 def main() -> None:

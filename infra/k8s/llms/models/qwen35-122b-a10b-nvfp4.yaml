@@ -1,5 +1,5 @@
 # RedHatAI Qwen3.5-122B-A10B NVFP4. Active model.
-# RTX PRO 6000 ~97 GiB; learn-english/transcribe replicas: 0 — GPU целиком под vLLM.
+# RTX PRO 6000 ~97 GiB; transcribe replicas: 0. Text-only: --language-model-only (RedHat HF).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,6 +48,8 @@ spec:
               value: "flashinfer_cutlass"
             - name: VLLM_REASONING_PARSER
               value: "qwen3"
+            - name: VLLM_LANGUAGE_MODEL_ONLY
+              value: "true"
           ports:
             - name: vllm
               containerPort: 80

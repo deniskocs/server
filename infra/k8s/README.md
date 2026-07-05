@@ -191,7 +191,7 @@ argocd app sync server
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
-**qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`**. qwen35: `VLLM_MAX_MODEL_LEN=16384`, без `VLLM_GPU_MEMORY_UTILIZATION` (дефолт vLLM ~0.9). Включить transcribe: `replicas: 1` и задать utilization в yaml.
+**qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`**. qwen35: `VLLM_MAX_MODEL_LEN=16384`, `VLLM_LANGUAGE_MODEL_ONLY=true` (RedHat: text-only, без vision encoder ~615s warmup). Образ `vllm-runner` после push в `llm-orchestrator/vllm-runner/` → CI rebuild.
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
