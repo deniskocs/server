@@ -58,7 +58,7 @@ spec:
   selector:
     app: vllm-llama-33-70b-nvfp4
   ports:
-    - name: http
+    - name: vllm
       port: 80
-      targetPort: http
+      targetPort: 80
       protocol: TCP

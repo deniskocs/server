@@ -58,7 +58,7 @@ spec:
   selector:
     app: vllm-gpt-oss-120b
   ports:
-    - name: http
+    - name: vllm
       port: 80
-      targetPort: http
+      targetPort: 80
       protocol: TCP

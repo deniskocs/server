@@ -59,7 +59,7 @@ spec:
   selector:
     app: vllm-qwen25-7b-awq
   ports:
-    - name: http
+    - name: vllm
       port: 80
-      targetPort: http
+      targetPort: 80
       protocol: TCP

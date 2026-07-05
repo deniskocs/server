@@ -9,7 +9,7 @@ metadata:
     # При syncOptions ServerSideApply Argo по умолчанию считает diff через structured-merge
     # и вшитую OpenAPI-схему — она отстаёт от API кластера (напр. status.terminatingReplicas).
     # ServerSideDiff сравнивает через SSA dry-run и убирает ComparisonError на diff.
-    argocd.argoproj.io/compare-options: ServerSideDiff=true
+    argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

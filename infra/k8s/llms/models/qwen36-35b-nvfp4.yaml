@@ -62,7 +62,7 @@ spec:
   selector:
     app: vllm-qwen36-35b-nvfp4
   ports:
-    - name: http
+    - name: vllm
       port: 80
-      targetPort: http
+      targetPort: 80
       protocol: TCP

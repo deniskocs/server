@@ -14,7 +14,7 @@ spec:
       containers:
         - name: vllm
           ports:
-            - name: http
+            - name: vllm
               containerPort: 80
               protocol: TCP
           volumeMounts:
