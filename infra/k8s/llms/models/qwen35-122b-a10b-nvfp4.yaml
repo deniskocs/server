@@ -10,6 +10,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "8"
     llm-orchestrator.chilik.net/enabled: "true"
+    # SSA: live Deployment имел rollingUpdate; Recreate несовместим — Replace на sync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=false
+    argocd.argoproj.io/sync-options: Replace=true
 spec:
   replicas: 1
   # Одна GPU на ai-server — сначала удалить старый pod, потом новый (освободить VRAM).

@@ -182,6 +182,13 @@ llms/
 
 **Deploy (одна GPU):** у всех vLLM Deployment — `strategy.type: Recreate` (сначала удаляется старый pod, потом поднимается новый; RollingUpdate держал бы два pod и делил VRAM).
 
+**Argo ComparisonError на Deployment vLLM (RollingUpdate→Recreate):** SSA оставляет `spec.strategy.rollingUpdate` в live state. На qwen35 Deployment — `compare-options: ServerSideDiff=false`, `sync-options: Replace=true`. Если diff всё ещё падает — **один раз**:
+
+```bash
+kubectl delete deployment vllm-qwen35-122b-a10b-nvfp4 -n llm-orchestrator
+argocd app sync server
+```
+
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.
 
 **qwen35 + transcribe:** пока qwen35 на ai-server — **`learn-english/transcribe` `replicas: 0`**. qwen35: `VLLM_MAX_MODEL_LEN=16384`, без `VLLM_GPU_MEMORY_UTILIZATION` (дефолт vLLM ~0.9). Включить transcribe: `replicas: 1` и задать utilization в yaml.
