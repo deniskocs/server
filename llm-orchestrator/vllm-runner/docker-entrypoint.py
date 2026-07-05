@@ -7,7 +7,6 @@ import os
 import sys
 from pathlib import Path
 
-LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = "80"
 
 
@@ -84,8 +83,7 @@ def _vllm_optional_args() -> list[str]:
 #   HF_TOKEN — Hugging Face API token (Bitwarden → huggingface-secrets в k8s).
 #
 # Сервер
-#   Bind 0.0.0.0:80 (константы LISTEN_HOST, LISTEN_PORT).
-#   CUDA_VISIBLE_DEVICES — какие GPU видит процесс (задаётся в Dockerfile/k8s, не vLLM-флаг).
+#   Порт API — 80 (LISTEN_PORT); host — дефолт vLLM (0.0.0.0).
 #
 # Hugging Face (скачивание весов при первом старте, всегда включено)
 # Параметры vLLM (опционально; пробрасываются как CLI-флаги api_server)
@@ -120,9 +118,6 @@ def main() -> None:
     print("Starting vLLM API server...")
     print(f"Model: {model_path}")
     print(f"Served model name: {served_model_name}")
-    print(f"CUDA_VISIBLE_DEVICES: {_env('CUDA_VISIBLE_DEVICES', '')}")
-    print(f"Port: {LISTEN_PORT}")
-    print(f"Host: {LISTEN_HOST}")
 
     cmd = [
         sys.executable,
@@ -135,8 +130,6 @@ def main() -> None:
         api_key,
         "--served-model-name",
         served_model_name,
-        "--host",
-        LISTEN_HOST,
         "--port",
         LISTEN_PORT,
     ]
