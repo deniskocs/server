@@ -1,6 +1,6 @@
 # RedHatAI Qwen3.5-122B-A10B NVFP4. Active model.
-# Совместно с transcribe (~10 GiB) на RTX PRO 6000 (~97 GiB): max-model-len 8192, utilization 0.76.
-# Веса ~71 GiB; пик cold start ниже за счёт меньшего KV profile. Без transcribe можно 16384 / 0.82–0.84.
+# Совместно с transcribe (~10 GiB) на RTX PRO 6000 (~97 GiB): 8192 / 0.76 + enforce-eager + text-only.
+# cudagraph profile (+2 GiB) и vision warmup (~600s) не помещаются рядом с Whisper; image vllm-runner обязателен.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,6 +45,10 @@ spec:
               value: "flashinfer_cutlass"
             - name: VLLM_REASONING_PARSER
               value: "qwen3"
+            - name: VLLM_ENFORCE_EAGER
+              value: "true"
+            - name: VLLM_LIMIT_MM_PER_PROMPT
+              value: '{"image": 0, "video": 0}'
           ports:
             - name: vllm
               containerPort: 80

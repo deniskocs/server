@@ -63,6 +63,7 @@ def _vllm_optional_args() -> list[str]:
         "VLLM_TOOL_CALL_PARSER": "--tool-call-parser",
         "VLLM_MOE_BACKEND": "--moe-backend",
         "VLLM_KV_CACHE_DTYPE": "--kv-cache-dtype",
+        "VLLM_LIMIT_MM_PER_PROMPT": "--limit-mm-per-prompt",
     }
     for env_name, flag in flag_map.items():
         value = _env(env_name)
@@ -70,6 +71,8 @@ def _vllm_optional_args() -> list[str]:
             args.extend([flag, value])
     if _env("VLLM_ENABLE_AUTO_TOOL_CHOICE") == "true":
         args.append("--enable-auto-tool-choice")
+    if _env("VLLM_ENFORCE_EAGER") == "true":
+        args.append("--enforce-eager")
     return args
 
 
@@ -97,6 +100,8 @@ def _vllm_optional_args() -> list[str]:
 #   VLLM_REASONING_PARSER — парсер reasoning-блоков (qwen3 для Qwen3).
 #   VLLM_ENABLE_AUTO_TOOL_CHOICE — true: включить --enable-auto-tool-choice.
 #   VLLM_TOOL_CALL_PARSER — парсер tool calls в ответах модели.
+#   VLLM_ENFORCE_EAGER — true: без CUDA graphs (меньше VRAM на cold start, нужно с transcribe).
+#   VLLM_LIMIT_MM_PER_PROMPT — JSON, напр. {"image": 0, "video": 0} — без vision warmup.
 
 
 def main() -> None:
