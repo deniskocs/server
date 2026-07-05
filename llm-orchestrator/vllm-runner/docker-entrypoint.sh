@@ -62,6 +62,9 @@ fi
 if [ -n "${VLLM_MOE_BACKEND:-}" ]; then
     VLLM_ARGS="$VLLM_ARGS --moe-backend $VLLM_MOE_BACKEND"
 fi
+if [ -n "${VLLM_KV_CACHE_DTYPE:-}" ]; then
+    VLLM_ARGS="$VLLM_ARGS --kv-cache-dtype $VLLM_KV_CACHE_DTYPE"
+fi
 
 if [ ! -d "$MODEL_PATH" ]; then
     echo "❌ Error: Model directory not found at $MODEL_PATH" >&2

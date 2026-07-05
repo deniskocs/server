@@ -1,23 +1,25 @@
-# Qwen2.5 7B Instruct AWQ (PORT 8010). LOCK: enabled=false, replicas=0.
+# RedHatAI Qwen3.5-122B-A10B NVFP4 (PORT 8011). Active model.
+# VRAM ~79 GiB при 0.82×97 GiB (RTX PRO 6000); ~17 GiB — transcribe + резерв.
+# Если не хватает KV-cache — поднять VLLM_GPU_MEMORY_UTILIZATION до 0.84, не выше.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vllm-qwen25-7b-awq
+  name: vllm-qwen35-122b-a10b-nvfp4
   namespace: llm-orchestrator
   labels:
-    app: vllm-qwen25-7b-awq
+    app: vllm-qwen35-122b-a10b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    llm-orchestrator.chilik.net/enabled: "true"
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
-      app: vllm-qwen25-7b-awq
+      app: vllm-qwen35-122b-a10b-nvfp4
   template:
     metadata:
       labels:
-        app: vllm-qwen25-7b-awq
+        app: vllm-qwen35-122b-a10b-nvfp4
     spec:
       nodeSelector:
         kubernetes.io/hostname: ai-server
@@ -28,46 +30,45 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8010
+              containerPort: 8011
           env:
             - name: HOST
               value: "0.0.0.0"
             - name: PORT
-              value: "8010"
+              value: "8011"
             - name: API_KEY
               value: "localkey"
-            - name: CUDA_VISIBLE_DEVICES
-              value: "0"
             - name: DEFAULT_MODEL_NAME
-              value: "Qwen/Qwen2.5-7B-Instruct-AWQ"
+              value: "RedHatAI/Qwen3.5-122B-A10B-NVFP4"
             - name: SERVED_MODEL_NAME
-              value: "Qwen2.5-7B-Instruct-AWQ"
-            - name: VLLM_QUANTIZATION
-              value: "awq_marlin"
+              value: "RedHatAI/Qwen3.5-122B-A10B-NVFP4"
             - name: VLLM_MAX_MODEL_LEN
-              value: "8192"
-            - name: VLLM_DTYPE
-              value: "float16"
+              value: "16384"
             - name: VLLM_GPU_MEMORY_UTILIZATION
-              value: "0.35"
+              value: "0.82"
+            - name: VLLM_KV_CACHE_DTYPE
+              value: "fp8"
+            - name: VLLM_MOE_BACKEND
+              value: "flashinfer_cutlass"
+            - name: VLLM_REASONING_PARSER
+              value: "qwen3"
           # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
-          # Доступ к GPU через runtimeClassName: nvidia; доля VRAM — VLLM_GPU_MEMORY_UTILIZATION.
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: vllm-qwen25-7b-awq
+  name: vllm-qwen35-122b-a10b-nvfp4
   namespace: llm-orchestrator
   labels:
-    app: vllm-qwen25-7b-awq
+    app: vllm-qwen35-122b-a10b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    llm-orchestrator.chilik.net/enabled: "true"
 spec:
   type: ClusterIP
   selector:
-    app: vllm-qwen25-7b-awq
+    app: vllm-qwen35-122b-a10b-nvfp4
   ports:
     - name: http
-      port: 8010
+      port: 8011
       targetPort: http
