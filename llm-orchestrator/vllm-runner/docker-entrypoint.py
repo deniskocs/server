@@ -35,11 +35,14 @@ def _model_ready(model_path: Path) -> bool:
     return False
 
 
-def _download_model(repo_id: str, model_path: Path) -> None:
+def _download_model(repo_id: str, model_path: Path, token: str) -> None:
     from huggingface_hub import snapshot_download
 
-    token = _env("HF_TOKEN") or _env("HUGGING_FACE_HUB_TOKEN")
-    print(f"Downloading {repo_id} → {model_path}", flush=True)
+    print(
+        f"⬇️  Model missing at {model_path} — downloading {repo_id} from Hugging Face...",
+        flush=True,
+    )
+    model_path.mkdir(parents=True, exist_ok=True)
     snapshot_download(
         repo_id=repo_id,
         local_dir=str(model_path),
@@ -78,14 +81,13 @@ def _vllm_optional_args() -> list[str]:
 #     (например RedHatAI/Qwen3.5-122B-A10B-NVFP4 → /models/RedHatAI/Qwen3.5-122B-A10B-NVFP4).
 #   SERVED_MODEL_NAME — имя модели в /v1/models и в поле model запросов (должно совпадать у клиентов).
 #   API_KEY — ключ для заголовка Authorization; vLLM отклоняет запросы без него.
+#   HF_TOKEN — Hugging Face API token (Bitwarden → huggingface-secrets в k8s).
 #
 # Сервер
 #   Bind 0.0.0.0:80 (константы LISTEN_HOST, LISTEN_PORT).
 #   CUDA_VISIBLE_DEVICES — какие GPU видит процесс (задаётся в Dockerfile/k8s, не vLLM-флаг).
 #
 # Hugging Face (скачивание весов при первом старте, всегда включено)
-#   HF_TOKEN | HUGGING_FACE_HUB_TOKEN — токен HF для gated/private репозиториев.
-#
 # Параметры vLLM (опционально; пробрасываются как CLI-флаги api_server)
 #   VLLM_QUANTIZATION — метод квантизации (awq, fp8, …).
 #   VLLM_MAX_MODEL_LEN — максимальная длина контекста в токенах.
@@ -103,16 +105,12 @@ def main() -> None:
     model_id = _require("DEFAULT_MODEL_NAME")
     served_model_name = _require("SERVED_MODEL_NAME")
     api_key = _require("API_KEY")
+    hf_token = _require("HF_TOKEN")
 
     model_path = Path("/models") / model_id
 
     if not _model_ready(model_path):
-        print(
-            f"⬇️  Model missing at {model_path} — downloading {model_id} from Hugging Face...",
-            flush=True,
-        )
-        model_path.mkdir(parents=True, exist_ok=True)
-        _download_model(model_id, model_path)
+        _download_model(model_id, model_path, hf_token)
 
     if not _model_ready(model_path):
         print(f"❌ Error: Model still not ready at {model_path} after download", file=sys.stderr)

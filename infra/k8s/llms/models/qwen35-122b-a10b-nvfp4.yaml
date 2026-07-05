@@ -45,11 +45,6 @@ spec:
               value: "flashinfer_cutlass"
             - name: VLLM_REASONING_PARSER
               value: "qwen3"
-            - name: HF_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: huggingface-secrets
-                  key: token
           # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
 ---
 apiVersion: v1

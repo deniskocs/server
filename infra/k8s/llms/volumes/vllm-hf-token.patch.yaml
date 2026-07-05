@@ -1,0 +1,16 @@
+# HF_TOKEN из huggingface-secrets (Bitwarden → ExternalSecret).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  template:
+    spec:
+      containers:
+        - name: vllm
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: huggingface-secrets
+                  key: token
