@@ -176,6 +176,8 @@ llms/
 
 Все vLLM Service слушают порт **80** (`protocol: TCP` в `models/*.yaml`). `containerPort: 80` — patch в `llms/volumes/`.
 
+**Локальный доступ (без Ingress):** активная модель qwen35 пробрасывает **hostPort 8030** на `ai-server` → `http://10.0.0.3:8030/v1` (или `localhost:8030` на самой ноде). In-cluster DNS и analyzer — по-прежнему `…svc.cluster.local` на порту 80.
+
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`; `HF_TOKEN` — patch в `llms/volumes/`.
 
 **GPU:** vLLM Deployments **не** запрашивают `nvidia.com/gpu` — scheduler не монополизирует RTX 6000. Доступ к GPU через `runtimeClassName: nvidia`; доля VRAM — `VLLM_GPU_MEMORY_UTILIZATION`. Одновременно на ноде могут жить vLLM и другие GPU-pod'ы; следи за суммарной VRAM (`nvidia-smi`). Pod'ы с `limits.nvidia.com/gpu: 1` (например transcribe) по-прежнему бронируют слот целиком.

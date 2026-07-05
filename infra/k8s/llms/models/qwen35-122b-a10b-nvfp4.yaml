@@ -45,6 +45,11 @@ spec:
               value: "flashinfer_cutlass"
             - name: VLLM_REASONING_PARSER
               value: "qwen3"
+          ports:
+            - name: vllm
+              containerPort: 80
+              hostPort: 8030
+              protocol: TCP
           # Без limits nvidia.com/gpu — scheduler не резервирует карту целиком.
 ---
 apiVersion: v1
