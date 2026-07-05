@@ -50,6 +50,8 @@ spec:
               value: "qwen3"
             - name: VLLM_LANGUAGE_MODEL_ONLY
               value: "true"
+            - name: VLLM_ENFORCE_EAGER
+              value: "true"
           ports:
             - name: vllm
               containerPort: 80
