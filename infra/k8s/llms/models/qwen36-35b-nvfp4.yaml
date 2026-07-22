@@ -1,5 +1,5 @@
 # RedHatAI Qwen3.6-35B-A3B NVFP4. Active model.
-# RTX PRO 6000 ~97 GiB; VLLM_GPU_MEMORY_UTILIZATION=0.7 — vLLM + transcribe (Whisper large-v3) на одной GPU.
+# RTX PRO 6000 ~97 GiB; только нода rtx-6000-pro.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,7 +26,7 @@ spec:
         app: vllm-qwen36-35b-nvfp4
     spec:
       nodeSelector:
-        kubernetes.io/hostname: ai-server
+        rtx-6000-pro: "true"
       runtimeClassName: nvidia
       containers:
         - name: vllm

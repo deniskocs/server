@@ -1,6 +1,6 @@
 # NVIDIA device plugin (k3s)
 
-Регистрирует `nvidia.com/gpu` на ноде с меткой **`rtx-titan=true`** (gpu-server-rtx-titan). Argo Application **`server`**.
+Регистрирует `nvidia.com/gpu` на нодах с меткой **`rtx-titan=true`** или **`rtx-6000-pro=true`**. Argo Application **`server`**.
 
 ## Одноразово на GPU-ноде
 
@@ -20,4 +20,4 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,GPU:.status.allocatable.
 kubectl get pods -n kube-system -l app=nvidia-device-plugin
 ```
 
-GPU-поды (например learn-english **transcribe**) должны иметь `runtimeClassName: nvidia` и `nodeSelector: rtx-titan: "true"`.
+GPU-поды должны иметь `runtimeClassName: nvidia` и `nodeSelector` на нужную метку (`rtx-titan` / `rtx-6000-pro`).

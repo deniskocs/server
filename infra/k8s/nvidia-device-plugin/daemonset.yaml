@@ -1,4 +1,4 @@
-# NVIDIA device plugin — GPU-нода с меткой rtx-titan (gpu-server-rtx-titan, 10.0.0.3).
+# NVIDIA device plugin — GPU-ноды с меткой rtx-titan или rtx-6000-pro.
 # После первой установки на ноде: sudo systemctl restart k3s-agent (см. README).
 apiVersion: apps/v1
 kind: DaemonSet
@@ -20,8 +20,18 @@ spec:
       labels:
         app: nvidia-device-plugin
     spec:
-      nodeSelector:
-        rtx-titan: "true"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: rtx-titan
+                    operator: In
+                    values: ["true"]
+              - matchExpressions:
+                  - key: rtx-6000-pro
+                    operator: In
+                    values: ["true"]
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
