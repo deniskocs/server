@@ -1,8 +1,8 @@
 # NVIDIA device plugin (k3s)
 
-Регистрирует `nvidia.com/gpu` на ноде **ai-server** (RTX 6000). Argo Application **`server`**.
+Регистрирует `nvidia.com/gpu` на ноде с меткой **`rtx-titan=true`** (gpu-server-rtx-titan). Argo Application **`server`**.
 
-## Одноразово на ai-server
+## Одноразово на GPU-ноде
 
 Если GPU-поды не стартуют или `RuntimeClass nvidia` не работает — перезапуск агента, чтобы k3s подхватил nvidia runtime в containerd:
 
@@ -20,4 +20,4 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,GPU:.status.allocatable.
 kubectl get pods -n kube-system -l app=nvidia-device-plugin
 ```
 
-GPU-поды (например learn-english **transcribe**) должны иметь `runtimeClassName: nvidia` и `nodeSelector: kubernetes.io/hostname: ai-server`.
+GPU-поды (например learn-english **transcribe**) должны иметь `runtimeClassName: nvidia` и `nodeSelector: rtx-titan: "true"`.

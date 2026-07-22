@@ -1,5 +1,5 @@
 #!/bin/bash
-# Одноразовая настройка k3s-agent на ai-server (10.0.0.3). Нужен sudo.
+# Одноразовая настройка k3s-agent на GPU-ноде (rtx-titan / 10.0.0.3). Нужен sudo.
 set -e
 
 CONFIG=/etc/rancher/k3s/config.yaml

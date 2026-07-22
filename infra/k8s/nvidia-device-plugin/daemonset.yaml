@@ -1,5 +1,5 @@
-# NVIDIA device plugin — только GPU-нода ai-server (10.0.0.3).
-# После первой установки на ai-server: sudo systemctl restart k3s-agent (см. README).
+# NVIDIA device plugin — GPU-нода с меткой rtx-titan (gpu-server-rtx-titan, 10.0.0.3).
+# После первой установки на ноде: sudo systemctl restart k3s-agent (см. README).
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -21,7 +21,7 @@ spec:
         app: nvidia-device-plugin
     spec:
       nodeSelector:
-        kubernetes.io/hostname: ai-server
+        rtx-titan: "true"
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
