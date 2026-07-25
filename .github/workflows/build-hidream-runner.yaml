@@ -1,0 +1,42 @@
+# Сборка и push образа hidream-runner → deniskocs/core:hidream-runner-1.0.0
+name: Build and push HiDream runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "llm-orchestrator/hidream-runner/**"
+      - ".github/workflows/build-hidream-runner.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push HiDream runner image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./llm-orchestrator/hidream-runner
+          file: ./llm-orchestrator/hidream-runner/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: deniskocs/core:hidream-runner-1.0.0
+
+      - name: Log out of Docker Hub
+        run: docker logout

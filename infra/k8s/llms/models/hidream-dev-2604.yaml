@@ -1,0 +1,80 @@
+# HiDream-O1-Image-Dev-2604 T2I on RTX Titan (~24 GiB). LOCK: enabled=false, replicas=0.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hidream-dev-2604
+  namespace: llm-orchestrator
+  labels:
+    app: hidream-dev-2604
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+    llm-orchestrator.chilik.net/enabled: "false"
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hidream-dev-2604
+  template:
+    metadata:
+      labels:
+        app: hidream-dev-2604
+    spec:
+      nodeSelector:
+        rtx-titan: "true"
+      runtimeClassName: nvidia
+      containers:
+        - name: vllm
+          image: deniskocs/core:hidream-runner-1.0.0
+          imagePullPolicy: Always
+          env:
+            - name: DEFAULT_MODEL_NAME
+              value: "HiDream-ai/HiDream-O1-Image-Dev-2604"
+            - name: SERVED_MODEL_NAME
+              value: "HiDream-ai/HiDream-O1-Image-Dev-2604"
+            - name: HIDREAM_DEFAULT_SIZE
+              value: "1024x1024"
+            - name: HIDREAM_DEFAULT_SEED
+              value: "32"
+            - name: HIDREAM_DTYPE
+              value: "bfloat16"
+          ports:
+            - name: http
+              containerPort: 80
+              hostPort: 8031
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 80
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 40
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hidream-dev-2604
+  namespace: llm-orchestrator
+  labels:
+    app: hidream-dev-2604
+  annotations:
+    argocd.argoproj.io/sync-wave: "8"
+    llm-orchestrator.chilik.net/enabled: "false"
+spec:
+  type: ClusterIP
+  selector:
+    app: hidream-dev-2604
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

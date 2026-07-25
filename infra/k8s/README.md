@@ -164,6 +164,7 @@ llms/
     qwen36-35b-nvfp4.yaml
     qwen35-122b-a10b-nvfp4.yaml
     qwen25-7b-awq.yaml
+    hidream-dev-2604.yaml
 ```
 
 | Файл | Модель | Service DNS |
@@ -173,10 +174,11 @@ llms/
 | `models/qwen36-35b-nvfp4.yaml` | `RedHatAI/Qwen3.6-35B-A3B-NVFP4` | `vllm-qwen36-35b-nvfp4` |
 | `models/qwen35-122b-a10b-nvfp4.yaml` | `RedHatAI/Qwen3.5-122B-A10B-NVFP4` | `vllm-qwen35-122b-a10b-nvfp4` |
 | `models/qwen25-7b-awq.yaml` | `Qwen/Qwen2.5-7B-Instruct-AWQ` | `vllm-qwen25-7b-awq` |
+| `models/hidream-dev-2604.yaml` | `HiDream-ai/HiDream-O1-Image-Dev-2604` | `hidream-dev-2604` (T2I, **rtx-titan**, hostPort **8031**) |
 
 Все vLLM Service слушают порт **80** (`protocol: TCP` в `models/*.yaml`). `containerPort: 80` — patch в `llms/volumes/`.
 
-**Локальный доступ (без Ingress):** активная модель qwen36 пробрасывает **hostPort 8030** на `ai-server` → `http://10.0.0.3:8030/v1` (или `localhost:8030` на самой ноде). In-cluster DNS и analyzer — по-прежнему `…svc.cluster.local` на порту 80.
+**Локальный доступ (без Ingress):** vLLM qwen36 — **hostPort 8030** на `rtx-6000-pro` → `http://10.0.0.3:8030/v1`. HiDream T2I — **hostPort 8031** на **rtx-titan** → `http://10.0.0.3:8031/v1/images/generations`. In-cluster — `…svc.cluster.local:80`.
 
 Параметры vLLM — в **`models/<model>.yaml`** (env в Deployment). Обязательные: `DEFAULT_MODEL_NAME`, `SERVED_MODEL_NAME`, `API_KEY`; `HF_TOKEN` — patch в `llms/volumes/`.
 
