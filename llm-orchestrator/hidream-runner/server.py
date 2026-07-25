@@ -25,6 +25,9 @@ _PROCESSOR: AutoProcessor | None = None
 _READY = False
 
 _SIZE_RE = re.compile(r"^(\d+)x(\d+)$")
+_PATCH_SIZE = 32
+_MIN_SIZE = 256
+_MAX_SIZE = 2048
 
 
 def _env(name: str, default: str) -> str:
@@ -107,14 +110,21 @@ def preload_model() -> None:
     _READY = True
 
 
+def _align_patch(dim: int) -> int:
+    return max(_PATCH_SIZE, dim // _PATCH_SIZE * _PATCH_SIZE)
+
+
 def _parse_size(size: str) -> tuple[int, int]:
     match = _SIZE_RE.match(size.strip())
     if not match:
         raise HTTPException(status_code=400, detail=f"Invalid size {size!r}; use WIDTHxHEIGHT, e.g. 1024x1024")
     width, height = int(match.group(1)), int(match.group(2))
-    if width < 64 or height < 64 or width > 2048 or height > 2048:
-        raise HTTPException(status_code=400, detail="size width/height must be between 64 and 2048")
-    return width, height
+    if width < _MIN_SIZE or height < _MIN_SIZE or width > _MAX_SIZE or height > _MAX_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"size width/height must be between {_MIN_SIZE} and {_MAX_SIZE}",
+        )
+    return _align_patch(width), _align_patch(height)
 
 
 class ImageGenerationRequest(BaseModel):

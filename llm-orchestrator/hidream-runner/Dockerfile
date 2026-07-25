@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/hidream
-RUN git clone --depth 1 --branch "${HIDREAM_REF}" "${HIDREAM_REPO}" . && \
-    sed -i 's/"use_flash_attn": True/"use_flash_attn": False/' /app/hidream/models/pipeline.py
+RUN git clone --depth 1 --branch "${HIDREAM_REF}" "${HIDREAM_REPO}" .
 
 WORKDIR /app/hidream-runner
-COPY server.py docker-entrypoint.py ./
-RUN chmod +x docker-entrypoint.py
+COPY server.py docker-entrypoint.py patch_pipeline.py ./
+RUN chmod +x docker-entrypoint.py patch_pipeline.py && \
+    /app/venv/bin/python3 /app/hidream-runner/patch_pipeline.py
 
 ENV PYTHONPATH=/app/hidream
 # FA_VERSION != 2|3 → optional flash_attn import (HiDream falls back when use_flash_attn=False).

@@ -26,7 +26,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: vllm
-          image: deniskocs/core:hidream-runner-1.0.1
+          image: deniskocs/core:hidream-runner-1.0.2
           imagePullPolicy: Always
           env:
             - name: DEFAULT_MODEL_NAME
@@ -49,6 +49,9 @@ spec:
               value: "0"
             - name: HIDREAM_GPU_MAX_MEMORY
               value: "22GiB"
+            # 0 = native width/height (patch-aligned 32px); 1 = official bucket snap to 2048² etc.
+            - name: HIDREAM_SNAP_RESOLUTION
+              value: "0"
             # Disable expandable_segments — can fail near full VRAM during shard load.
             - name: PYTORCH_ALLOC_CONF
               value: ""
