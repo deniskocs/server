@@ -28,6 +28,11 @@ RUN . /app/venv/bin/activate && \
         accelerate \
         einops \
         scipy \
+        tqdm \
+        pillow \
+        torchvision \
+        --extra-index-url https://download.pytorch.org/whl/cu129 && \
+    pip install --no-cache-dir \
         "fastapi>=0.115.0" \
         "uvicorn[standard]>=0.32.0" \
         huggingface_hub && \
