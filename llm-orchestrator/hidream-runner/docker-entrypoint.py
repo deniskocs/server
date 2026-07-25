@@ -51,7 +51,16 @@ def _download_model(repo_id: str, model_path: Path, token: str | None) -> None:
     print("Download complete.", flush=True)
 
 
+def _pin_cuda_device() -> None:
+    """Pin to one physical GPU before torch/CUDA init (must run in entrypoint, not server import)."""
+    physical = _env("HIDREAM_PHYSICAL_GPU") or _env("CUDA_VISIBLE_DEVICES")
+    if physical:
+        os.environ["CUDA_VISIBLE_DEVICES"] = physical
+        print(f"[hidream] CUDA_VISIBLE_DEVICES={physical} (pinned before load)", flush=True)
+
+
 def main() -> None:
+    _pin_cuda_device()
     model_id = _require("DEFAULT_MODEL_NAME")
     hf_token = _env("HF_TOKEN")
 

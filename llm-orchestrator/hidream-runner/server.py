@@ -45,24 +45,54 @@ def _get_tokenizer(processor):
     return processor.tokenizer
 
 
+def _log_cuda_devices() -> None:
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "(unset)")
+    nvidia = os.environ.get("NVIDIA_VISIBLE_DEVICES", "(unset)")
+    print(f"[hidream] CUDA_VISIBLE_DEVICES={visible} NVIDIA_VISIBLE_DEVICES={nvidia}", flush=True)
+    if not torch.cuda.is_available():
+        return
+    for i in range(torch.cuda.device_count()):
+        props = torch.cuda.get_device_properties(i)
+        free, total = torch.cuda.mem_get_info(i)
+        print(
+            f"[hidream] cuda:{i} {props.name} "
+            f"free={free / 1e9:.2f}GB total={total / 1e9:.2f}GB",
+            flush=True,
+        )
+
+
 def _load_model(model_path: str) -> tuple[AutoProcessor, Qwen3VLForConditionalGeneration]:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for HiDream inference")
+
+    _log_cuda_devices()
+    torch.cuda.empty_cache()
 
     dtype_name = _env("HIDREAM_DTYPE", "bfloat16").lower()
     dtype = {"bfloat16": torch.bfloat16, "float16": torch.float16, "float32": torch.float32}.get(
         dtype_name, torch.bfloat16
     )
 
-    print(f"[hidream] Loading from {model_path} (dtype={dtype_name})", flush=True)
+    # HiDream generate_image() expects a single CUDA device; device_map="auto" splits
+    # across GPUs and breaks inference (cuda:0 vs cuda:1 tensor mismatch).
+    cuda_device = int(_env("HIDREAM_CUDA_DEVICE", "0"))
+    gpu_mem = _env("HIDREAM_GPU_MAX_MEMORY", "22GiB")
+
+    print(
+        f"[hidream] Loading from {model_path} "
+        f"(dtype={dtype_name}, device=cuda:{cuda_device}, max_memory={gpu_mem})",
+        flush=True,
+    )
     processor = AutoProcessor.from_pretrained(model_path)
     model = Qwen3VLForConditionalGeneration.from_pretrained(
         model_path,
-        torch_dtype=dtype,
-        device_map="cuda",
+        dtype=dtype,
+        low_cpu_mem_usage=True,
+        device_map={"": cuda_device},
+        max_memory={cuda_device: gpu_mem},
     ).eval()
     _add_special_tokens(_get_tokenizer(processor))
-    print("[hidream] Model ready", flush=True)
+    print(f"[hidream] Model ready (device_map={getattr(model, 'hf_device_map', 'cuda')})", flush=True)
     return processor, model
 
 

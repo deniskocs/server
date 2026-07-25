@@ -26,7 +26,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: vllm
-          image: deniskocs/core:hidream-runner-1.0.0
+          image: deniskocs/core:hidream-runner-1.0.1
           imagePullPolicy: Always
           env:
             - name: DEFAULT_MODEL_NAME
@@ -41,9 +41,17 @@ spec:
               value: "bfloat16"
             - name: FA_VERSION
               value: "auto"
-            # Physical GPU 1 on rtx-titan (GPU 0 often busy). Inside the container this is cuda:0.
-            - name: CUDA_VISIBLE_DEVICES
+            # Physical GPU 1 on rtx-titan (GPU 0 often busy). Entrypoint sets CUDA_VISIBLE_DEVICES
+            # before torch init; inside the container that GPU is cuda:0.
+            - name: HIDREAM_PHYSICAL_GPU
               value: "1"
+            - name: HIDREAM_CUDA_DEVICE
+              value: "0"
+            - name: HIDREAM_GPU_MAX_MEMORY
+              value: "22GiB"
+            # Disable expandable_segments — can fail near full VRAM during shard load.
+            - name: PYTORCH_ALLOC_CONF
+              value: ""
           ports:
             - name: http
               containerPort: 80

@@ -19,7 +19,6 @@ COPY server.py docker-entrypoint.py ./
 RUN chmod +x docker-entrypoint.py
 
 ENV PYTHONPATH=/app/hidream
-ENV PYTORCH_ALLOC_CONF=expandable_segments:True
 # FA_VERSION != 2|3 → optional flash_attn import (HiDream falls back when use_flash_attn=False).
 ENV FA_VERSION=auto
 
