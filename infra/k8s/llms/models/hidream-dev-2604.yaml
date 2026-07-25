@@ -39,6 +39,11 @@ spec:
               value: "32"
             - name: HIDREAM_DTYPE
               value: "bfloat16"
+            - name: FA_VERSION
+              value: "auto"
+            # Physical GPU 1 on rtx-titan (GPU 0 often busy). Inside the container this is cuda:0.
+            - name: CUDA_VISIBLE_DEVICES
+              value: "1"
           ports:
             - name: http
               containerPort: 80
