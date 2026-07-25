@@ -8,9 +8,9 @@ metadata:
     app: hidream-dev-2604
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    llm-orchestrator.chilik.net/enabled: "true"
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -68,7 +68,7 @@ metadata:
     app: hidream-dev-2604
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "false"
+    llm-orchestrator.chilik.net/enabled: "true"
 spec:
   type: ClusterIP
   selector:
