@@ -10,7 +10,7 @@ spec:
         - name: models
           hostPath:
             path: /home/denis/models
-            type: Directory
+            type: DirectoryOrCreate
       containers:
         - name: vllm
           ports:

@@ -11,6 +11,10 @@ else
   echo 'default-runtime: nvidia' | sudo tee -a "$CONFIG"
 fi
 
+echo "Ensuring model cache directory exists..."
+sudo mkdir -p /home/denis/models
+sudo chown denis:denis /home/denis/models
+
 echo "Restarting k3s-agent..."
 sudo systemctl restart k3s-agent
 sleep 5
