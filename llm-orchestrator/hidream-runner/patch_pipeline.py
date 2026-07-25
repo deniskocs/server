@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -18,13 +19,23 @@ def _replace_once(text: str, old: str, new: str, label: str) -> str:
 
 def main() -> None:
     text = PIPELINE.read_text()
+    notes: list[str] = ["native low-res enabled"]
 
-    text = _replace_once(
-        text,
-        '"use_flash_attn": True',
-        '"use_flash_attn": False',
-        "use_flash_attn",
+    disable_flash = os.environ.get("HIDREAM_DISABLE_FLASH_ATTN", "0").lower() in (
+        "1",
+        "true",
+        "yes",
     )
+    if disable_flash:
+        text = _replace_once(
+            text,
+            '"use_flash_attn": True',
+            '"use_flash_attn": False',
+            "use_flash_attn",
+        )
+        notes.append("flash_attn off")
+    else:
+        notes.append("flash_attn on")
 
     old_snap = (
         "        w, h = find_closest_resolution(width, height)\n"
@@ -49,7 +60,7 @@ def main() -> None:
     text = _replace_once(text, old_snap, new_snap, "resolution snap")
 
     PIPELINE.write_text(text)
-    print("✅ HiDream pipeline patched (flash_attn off, native low-res enabled)", flush=True)
+    print(f"✅ HiDream pipeline patched ({', '.join(notes)})", flush=True)
 
 
 if __name__ == "__main__":

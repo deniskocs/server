@@ -1,4 +1,4 @@
-# Сборка и push образа hidream-runner → deniskocs/core:hidream-runner-1.0.2
+# Сборка и push образа hidream-runner → deniskocs/core:hidream-runner-1.0.3
 name: Build and push HiDream runner
 
 on:
@@ -36,7 +36,9 @@ jobs:
           file: ./llm-orchestrator/hidream-runner/Dockerfile
           push: true
           platforms: linux/amd64
-          tags: deniskocs/core:hidream-runner-1.0.2
+          tags: deniskocs/core:hidream-runner-1.0.3
+          build-args: |
+            HIDREAM_DISABLE_FLASH_ATTN=0
 
       - name: Log out of Docker Hub
         run: docker logout

@@ -1,4 +1,5 @@
-# HiDream-O1-Image-Dev-2604 T2I on RTX Titan (~24 GiB). LOCK: enabled=false, replicas=0.
+# HiDream-O1-Image-Dev-2604 T2I on RTX PRO 6000 (~97 GiB, flash-attn).
+# Shares GPU with vLLM qwen36 (VLLM_GPU_MEMORY_UTILIZATION=0.7); HiDream ~20 GiB in the remainder.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,11 +23,11 @@ spec:
         app: hidream-dev-2604
     spec:
       nodeSelector:
-        rtx-titan: "true"
+        rtx-6000-pro: "true"
       runtimeClassName: nvidia
       containers:
         - name: vllm
-          image: deniskocs/core:hidream-runner-1.0.2
+          image: deniskocs/core:hidream-runner-1.0.3
           imagePullPolicy: Always
           env:
             - name: DEFAULT_MODEL_NAME
@@ -40,21 +41,14 @@ spec:
             - name: HIDREAM_DTYPE
               value: "bfloat16"
             - name: FA_VERSION
-              value: "auto"
-            # Physical GPU 1 on rtx-titan (GPU 0 often busy). Entrypoint sets CUDA_VISIBLE_DEVICES
-            # before torch init; inside the container that GPU is cuda:0.
-            - name: HIDREAM_PHYSICAL_GPU
-              value: "1"
+              value: "2"
             - name: HIDREAM_CUDA_DEVICE
               value: "0"
             - name: HIDREAM_GPU_MAX_MEMORY
-              value: "22GiB"
+              value: "28GiB"
             # 0 = native width/height (patch-aligned 32px); 1 = official bucket snap to 2048² etc.
             - name: HIDREAM_SNAP_RESOLUTION
               value: "0"
-            # Disable expandable_segments — can fail near full VRAM during shard load.
-            - name: PYTORCH_ALLOC_CONF
-              value: ""
           ports:
             - name: http
               containerPort: 80
