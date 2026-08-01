@@ -14,6 +14,10 @@ proxyHeaders: xforwarded
 production: true
 hostname: keycloak.chilik.net
 
+# local-path PVC Postgres привязан к ноде; данные — backup/restore в server/backups/keycloak.
+nodeSelector:
+  kubernetes.io/hostname: gpu-server-rtx-titan
+
 global:
   security:
     allowInsecureImages: true
@@ -34,6 +38,9 @@ postgresql:
   image:
     registry: docker.io
     repository: bitnamilegacy/postgresql
+  primary:
+    nodeSelector:
+      kubernetes.io/hostname: gpu-server-rtx-titan
 
 # Не использовать Helm keycloakConfigCli — Job с bitnami/keycloak-config-cli (образ снят).
 keycloakConfigCli:
