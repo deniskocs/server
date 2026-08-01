@@ -13,3 +13,6 @@ mcp/smb-books-mcp/config.yaml
 **/.terraform/
 *.tfstate
 *.tfstate.*
+
+# Local DB dumps under backups/ (keep *.sh)
+backups/**/[0-9][0-9][0-9][0-9]-*/
