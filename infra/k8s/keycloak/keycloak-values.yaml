@@ -26,6 +26,15 @@ image:
   registry: docker.io
   repository: bitnamilegacy/keycloak
 
+# Первый старт на новой ноде (build server image) не укладывается в chart default 768Mi.
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
 postgresql:
   enabled: true
   auth:
