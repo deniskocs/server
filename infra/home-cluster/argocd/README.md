@@ -33,8 +33,11 @@ ssh -t USER@NODE 'sudo k3s kubectl apply -f /tmp/server-application.yaml'
 
 - **`values.yaml`** — `terraform apply` в `infra/home-cluster`.
 - **`infra/k8s/`** — push, Argo sync сам.
-- **`application.yaml`** (редко) — scp + apply.
+- **`application.yaml`** (редко) — apply в кластер (не в path sync):
 
 ```bash
+kubectl apply -f infra/home-cluster/argocd/application.yaml
 argocd app sync server
 ```
+
+`ignoreDifferences` на `Deployment.spec.replicas` в namespace `llm-orchestrator` — ручной старт/стоп vLLM и HiDream через `kubectl scale` (см. `infra/k8s/README.md`).

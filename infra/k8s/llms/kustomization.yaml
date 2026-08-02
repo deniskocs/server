@@ -9,10 +9,11 @@ components:
 resources:
   - namespace-llm-orchestrator.yaml
   - external-secret-huggingface.yaml
-  # LOCK: раскомментируй модель + enabled=true + replicas=1 в её yaml.
+  # Модели в Git с replicas: 0. Старт/стоп — kubectl scale (см. infra/k8s/README.md).
+  # Другие модели: раскомментируй файл + replicas: 0 в yaml, затем scale вручную.
   # - models/gpt-oss-120b.yaml
   # - models/llama-33-70b-nvfp4.yaml
-  # - models/qwen36-35b-nvfp4.yaml
   # - models/qwen35-122b-a10b-nvfp4.yaml
   # - models/qwen25-7b-awq.yaml
-  # - models/hidream-dev-2604.yaml
+  - models/qwen36-35b-nvfp4.yaml
+  - models/hidream-dev-2604.yaml

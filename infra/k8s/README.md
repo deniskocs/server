@@ -197,16 +197,40 @@ argocd app sync server
 
 **Hugging Face:** если весов нет на диске, `vllm-runner` entrypoint качает модель с HF. Токен — Bitwarden secret **`huggingface-token`** → ExternalSecret `llms/external-secret-huggingface.yaml` → Secret **`huggingface-secrets`** (ключ `token` → env `HF_TOKEN`).
 
-**Двойной LOCK (по умолчанию не запускается):**
+**Старт / стоп вручную (без коммита):** Argo Application `server` игнорирует `/spec/replicas` у всех Deployment в `llm-orchestrator` (`ignoreDifferences` + `RespectIgnoreDifferences`). В Git у моделей дефолт **`replicas: 0`** (холодный старт). Live scale Argo не откатывает при selfHeal.
 
-1. В **`infra/k8s/kustomization.yaml`** строка `# - llms/` **закомментирована** — Argo не применяет `llms/`.
-2. В **`llms/kustomization.yaml`** модели **закомментированы**; в yaml: `enabled: "false"`, `replicas: 0`.
+| Deployment | Назначение | hostPort на `10.0.0.4` |
+|------------|------------|-------------------------|
+| `vllm-qwen36-35b-nvfp4` | vLLM текст (Qwen3.6-35B) | **8030** → `/v1` |
+| `hidream-dev-2604` | генерация картинок (HiDream T2I) | **8031** → `/v1/images/generations` |
 
-**Включить одну модель:** раскомментировать `- llms/` в корневом kustomization → в `llms/kustomization.yaml` раскомментировать **один** файл в `models/` → в yaml `enabled: "true"`, `replicas: 1` → `argocd app sync server`.
+```bash
+# статус
+kubectl get deploy -n llm-orchestrator
+kubectl get pods -n llm-orchestrator -o wide
 
-**Выключить:** обратные шаги; prune удалит объекты, убранные из resources.
+# запустить vLLM
+kubectl scale deploy/vllm-qwen36-35b-nvfp4 -n llm-orchestrator --replicas=1
 
-После merge: `argocd app sync server`.
+# запустить HiDream (T2I)
+kubectl scale deploy/hidream-dev-2604 -n llm-orchestrator --replicas=1
+
+# остановить (освободить VRAM на rtx-6000-pro)
+kubectl scale deploy/vllm-qwen36-35b-nvfp4 -n llm-orchestrator --replicas=0
+kubectl scale deploy/hidream-dev-2604 -n llm-orchestrator --replicas=0
+
+# оба сразу
+kubectl scale deploy -n llm-orchestrator \
+  vllm-qwen36-35b-nvfp4 hidream-dev-2604 --replicas=0
+```
+
+То же в Argo CD UI: Application **server** → ресурс Deployment → **Details** → **Actions** → **Scale**.
+
+На одной RTX PRO 6000 обычно хватает **либо** тяжёлого vLLM, **либо** тюнинга; qwen36 + HiDream делят VRAM (см. `VLLM_GPU_MEMORY_UTILIZATION`), но перед fine-tune оба лучше остановить (`replicas=0`).
+
+**Добавить ещё одну модель в GitOps:** раскомментировать файл в `llms/kustomization.yaml`, в yaml оставить `replicas: 0`, push → Argo создаст Deployment; дальше только `kubectl scale --replicas=1`.
+
+**Убрать модель из кластера полностью:** закомментировать файл в `llms/kustomization.yaml` → push → prune удалит Deployment/Service.
 
 **Argo ComparisonError на Service vLLM (port 8011→80):** SSA держит старый managed field; ServerSideDiff падает с `null element` в `.spec.ports`. **Один раз** удалить Service и sync:
 

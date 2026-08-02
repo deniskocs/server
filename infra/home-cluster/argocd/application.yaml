@@ -22,6 +22,14 @@ spec:
     server: https://kubernetes.default.svc
     # Для Kustomize с ресурсами в разных namespace это поле не подменяет metadata.namespace в манифестах.
     namespace: default
+  # replicas для LLM/T2I в llm-orchestrator управляются вручную (kubectl scale / Argo Actions → Scale).
+  # Git держит replicas: 0 как холодный дефолт; selfHeal не откатывает live scale.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      namespace: llm-orchestrator
+      jsonPointers:
+        - /spec/replicas
   syncPolicy:
     automated:
       prune: true
@@ -31,3 +39,4 @@ spec:
       # CRD external-secrets (SecretStore / ClusterSecretStore) огромные; client-side apply
       # кладёт last-applied-configuration в annotations и упирается в лимит 256 KiB.
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
