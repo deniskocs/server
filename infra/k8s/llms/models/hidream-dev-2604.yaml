@@ -1,4 +1,4 @@
-# HiDream-O1-Image-Dev-2604 T2I on RTX PRO 6000 (~97 GiB, flash-attn).
+# HiDream-O1-Image-Dev-2604 T2I on RTX PRO 6000 (~97 GiB, flash-attn). LOCK: enabled=false, replicas=0.
 # Shares GPU with vLLM qwen36 (VLLM_GPU_MEMORY_UTILIZATION=0.7); HiDream ~20 GiB in the remainder.
 apiVersion: apps/v1
 kind: Deployment
@@ -9,9 +9,9 @@ metadata:
     app: hidream-dev-2604
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "true"
+    llm-orchestrator.chilik.net/enabled: "false"
 spec:
-  replicas: 1
+  replicas: 0
   strategy:
     type: Recreate
   selector:
@@ -78,7 +78,7 @@ metadata:
     app: hidream-dev-2604
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "true"
+    llm-orchestrator.chilik.net/enabled: "false"
 spec:
   type: ClusterIP
   selector:

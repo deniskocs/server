@@ -15,5 +15,4 @@ resources:
   # - models/qwen36-35b-nvfp4.yaml
   # - models/qwen35-122b-a10b-nvfp4.yaml
   # - models/qwen25-7b-awq.yaml
-  - models/hidream-dev-2604.yaml
-  - models/qwen36-35b-nvfp4.yaml
+  # - models/hidream-dev-2604.yaml

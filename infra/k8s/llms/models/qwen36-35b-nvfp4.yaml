@@ -1,4 +1,4 @@
-# RedHatAI Qwen3.6-35B-A3B NVFP4. Active model.
+# RedHatAI Qwen3.6-35B-A3B NVFP4. LOCK: enabled=false, replicas=0.
 # RTX PRO 6000 ~97 GiB; только нода rtx-6000-pro.
 apiVersion: apps/v1
 kind: Deployment
@@ -9,12 +9,12 @@ metadata:
     app: vllm-qwen36-35b-nvfp4
   annotations:
     argocd.argoproj.io/sync-wave: "8"
-    llm-orchestrator.chilik.net/enabled: "true"
+    llm-orchestrator.chilik.net/enabled: "false"
     # SSA: live Deployment имел rollingUpdate; Recreate несовместим — Replace на sync.
     argocd.argoproj.io/compare-options: ServerSideDiff=false
     argocd.argoproj.io/sync-options: Replace=true
 spec:
-  replicas: 1
+  replicas: 0
   strategy:
     type: Recreate
   selector:
@@ -73,7 +73,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "8"
     argocd.argoproj.io/compare-options: ServerSideDiff=false
     argocd.argoproj.io/sync-options: Replace=true
-    llm-orchestrator.chilik.net/enabled: "true"
+    llm-orchestrator.chilik.net/enabled: "false"
 spec:
   type: ClusterIP
   selector:
